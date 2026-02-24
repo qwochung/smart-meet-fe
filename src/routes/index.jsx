@@ -1,18 +1,24 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { LoginPage } from '../pages/Auth';
+import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
+import {LoginPage} from '../pages/Auth';
+import {MeetingPage} from "../pages/Meeting/index.js";
+import {MainLayout} from "../layouts/index.js";
 
 const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Auth Routes */}
-        <Route path="/auth/login" element={<LoginPage />} />
 
-        {/* Redirect root to login */}
-        <Route path="/" element={<Navigate to="/auth/login" replace />} />
+        {/*TODO: Apply Auth layout*/}
+        {/* Auth */}
+        <Route path="/auth/login" element={<LoginPage/>}/>
+        <Route path="/" element={<Navigate to="/auth/login" replace/>}/>
+        <Route path="*" element={<Navigate to="/auth/login" replace/>}/>
 
-        {/* Catch all - redirect to login */}
-        <Route path="*" element={<Navigate to="/auth/login" replace />} />
+        {/*Meeting */}
+        <Route element={<MainLayout/>}>
+          <Route path="/room/*" element={<MeetingPage/>}/>
+        </Route>
+
       </Routes>
     </BrowserRouter>
   );
