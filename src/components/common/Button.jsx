@@ -6,6 +6,7 @@ const variants = {
   outline: 'border border-dark-600 hover:bg-dark-700 text-white focus:ring-dark-500',
   ghost: 'hover:bg-dark-700 text-white focus:ring-dark-500',
   danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
+  none: 'bg-none ',
 };
 
 const sizes = {
