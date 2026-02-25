@@ -70,7 +70,7 @@
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{
-                backgroundImage: `url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1920&q=80')`,
+                backgroundImage: `url('https://plus.unsplash.com/premium_photo-1661494230538-dafa871a4b5d?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`,
               }}
             >
               <div className="absolute inset-0 bg-dark-900/80" />
@@ -79,13 +79,12 @@
             {/* Content */}
             <div className="relative z-10 flex flex-col justify-between p-12 w-full">
               {/* Logo */}
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    // thay logo ở đây
-                  </svg>
-                </div>
-                <span className="text-xl font-bold text-white">Smart Meet</span>
+              <div className="flex items-center">
+                <img 
+                  src="/logo.png" 
+                  alt="Smart Meet"
+                  className="h-20 w-auto object-contain"
+                />
               </div>
 
               {/* Main Content */}
