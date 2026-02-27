@@ -1,5 +1,5 @@
 import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
-import {LoginPage} from '../pages/Auth';
+import {LoginPage, RegisterPage} from '../pages/Auth';
 import {MeetingPage} from "../pages/Meeting/index.js";
 import {MainLayout} from "../layouts/index.js";
 
@@ -11,6 +11,7 @@ const AppRoutes = () => {
         {/*TODO: Apply Auth layout*/}
         {/* Auth */}
         <Route path="/auth/login" element={<LoginPage/>}/>
+        <Route path="/auth/register" element={<RegisterPage/>}/>
         <Route path="/" element={<Navigate to="/auth/login" replace/>}/>
         <Route path="*" element={<Navigate to="/auth/login" replace/>}/>
 
