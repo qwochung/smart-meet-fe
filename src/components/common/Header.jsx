@@ -40,7 +40,7 @@ const CloseIcon = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 
-// ==================== SUB-COMPONENTS ====================
+//  SUB-COMPONENTS 
 
 // Logo Component
 const Logo = () => (
@@ -144,7 +144,7 @@ const MobileMenuButton = ({ isOpen, onClick }) => (
   </button>
 );
 
-// ==================== HEADER VARIANTS ====================
+//  HEADER VARIANTS
 
 // Public Header (Landing pages)
 const PublicHeader = ({ onSignIn, onSignUp, isMobileMenuOpen, setIsMobileMenuOpen }) => {
@@ -313,7 +313,7 @@ const MeetingHeader = ({ user, meetingTitle, onSettingsClick, onHelpClick }) => 
   );
 };
 
-// ==================== MAIN HEADER COMPONENT ====================
+//  MAIN HEADER COMPONENT 
 const Header = ({ 
   variant = "public", // "public" | "app" | "meeting"
   user,
