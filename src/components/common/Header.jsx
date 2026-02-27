@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Button from './Button';
+import {Settings, MessageCircleQuestionMark, Bell, Search
+  , CircleX
+} from "lucide-react";
 
 // ==================== ICONS ====================
-const SettingsIcon = ({ className = "w-5 h-5" }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
 
 const HelpIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,7 +119,7 @@ const NavLinks = ({ links, isMobile = false, onLinkClick }) => {
 // Search Input Component
 const SearchInput = ({ placeholder = "Search meetings...", value, onChange }) => (
   <div className="relative hidden md:block">
-    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
     <input
       type="text"
       placeholder={placeholder}
@@ -140,7 +137,7 @@ const MobileMenuButton = ({ isOpen, onClick }) => (
     className="md:hidden p-2 text-dark-300 hover:text-white transition-colors"
     aria-label="Toggle menu"
   >
-    {isOpen ? <CloseIcon /> : <MenuIcon />}
+    {isOpen ? <CircleX /> : <Menu />}
   </button>
 );
 
@@ -239,7 +236,7 @@ const AppHeader = ({ user, searchValue, onSearchChange, onNotificationClick, isM
         <div className="hidden md:flex items-center gap-2">
           <SearchInput value={searchValue} onChange={onSearchChange} />
           <IconButton 
-            icon={BellIcon} 
+            icon={Bell}
             onClick={onNotificationClick} 
             badge={true}
             ariaLabel="Notifications"
@@ -255,7 +252,7 @@ const AppHeader = ({ user, searchValue, onSearchChange, onNotificationClick, isM
         <div className="md:hidden py-4 border-t border-dark-800">
           <div className="mb-4">
             <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
               <input
                 type="text"
                 placeholder="Search meetings..."
@@ -272,7 +269,7 @@ const AppHeader = ({ user, searchValue, onSearchChange, onNotificationClick, isM
           />
           <div className="flex items-center gap-4 pt-4 mt-4 border-t border-dark-800">
             <IconButton 
-              icon={BellIcon} 
+              icon={Bell}
               onClick={onNotificationClick}
               ariaLabel="Notifications"
             />
@@ -287,7 +284,7 @@ const AppHeader = ({ user, searchValue, onSearchChange, onNotificationClick, isM
 // Meeting Header (During meeting)
 const MeetingHeader = ({ user, meetingTitle, onSettingsClick, onHelpClick }) => {
   return (
-    <div className="flex items-center justify-between h-14">
+    <div className="flex items-center justify-between h-16">
       <Logo />
       
       {meetingTitle && (
@@ -298,12 +295,12 @@ const MeetingHeader = ({ user, meetingTitle, onSettingsClick, onHelpClick }) => 
       
       <div className="flex items-center gap-1">
         <IconButton 
-          icon={SettingsIcon} 
+          icon={Settings}
           onClick={onSettingsClick}
           ariaLabel="Settings"
         />
         <IconButton 
-          icon={HelpIcon} 
+          icon={MessageCircleQuestionMark}
           onClick={onHelpClick}
           ariaLabel="Help"
         />
