@@ -249,6 +249,7 @@ const MeetingHeader = ({ user, meetingTitle, onSettingsClick, onHelpClick }) => 
 
 const Header = ({
   variant = 'public',
+  fixed = false,
   user,
   meetingTitle,
   searchValue,
@@ -263,40 +264,48 @@ const Header = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const headerShellClass =
     variant === 'public' ? 'bg-transparent border-b border-white/10' : 'bg-dark-900 border-b border-dark-800';
+  const fixedClass = fixed
+    ? variant === 'public'
+      ? 'fixed top-0 inset-x-0 z-50 bg-[#020916]/85 backdrop-blur-xl'
+      : 'fixed top-0 inset-x-0 z-50'
+    : '';
 
   return (
-    <header className={`${headerShellClass} ${className}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {variant === 'public' && (
-          <PublicHeader
-            onSignIn={onSignIn}
-            onSignUp={onSignUp}
-            isMobileMenuOpen={isMobileMenuOpen}
-            setIsMobileMenuOpen={setIsMobileMenuOpen}
-          />
-        )}
+    <>
+      <header className={`${headerShellClass} ${fixedClass} ${className}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {variant === 'public' && (
+            <PublicHeader
+              onSignIn={onSignIn}
+              onSignUp={onSignUp}
+              isMobileMenuOpen={isMobileMenuOpen}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
+            />
+          )}
 
-        {variant === 'app' && (
-          <AppHeader
-            user={user}
-            searchValue={searchValue}
-            onSearchChange={onSearchChange}
-            onNotificationClick={onNotificationClick}
-            isMobileMenuOpen={isMobileMenuOpen}
-            setIsMobileMenuOpen={setIsMobileMenuOpen}
-          />
-        )}
+          {variant === 'app' && (
+            <AppHeader
+              user={user}
+              searchValue={searchValue}
+              onSearchChange={onSearchChange}
+              onNotificationClick={onNotificationClick}
+              isMobileMenuOpen={isMobileMenuOpen}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
+            />
+          )}
 
-        {variant === 'meeting' && (
-          <MeetingHeader
-            user={user}
-            meetingTitle={meetingTitle}
-            onSettingsClick={onSettingsClick}
-            onHelpClick={onHelpClick}
-          />
-        )}
-      </div>
-    </header>
+          {variant === 'meeting' && (
+            <MeetingHeader
+              user={user}
+              meetingTitle={meetingTitle}
+              onSettingsClick={onSettingsClick}
+              onHelpClick={onHelpClick}
+            />
+          )}
+        </div>
+      </header>
+      {fixed && <div className="h-16" aria-hidden="true" />}
+    </>
   );
 };
 

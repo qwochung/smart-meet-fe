@@ -71,7 +71,7 @@ const HomePage = () => {
         <div className="absolute inset-y-0 right-0 w-1/2 bg-[linear-gradient(120deg,rgba(37,99,235,0.04),rgba(15,23,42,0.08))]" />
 
         <div className="relative z-10">
-          <Header variant="public" />
+          <Header variant="public" fixed />
 
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20 lg:pt-16 lg:pb-28">
             <div className="grid gap-12 lg:grid-cols-[1fr_0.95fr] lg:items-center">
