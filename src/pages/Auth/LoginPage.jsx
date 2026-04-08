@@ -31,9 +31,9 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-slate-50">
       {/* Left Side - Hero Section */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-dark-900 overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 relative bg-slate-100 overflow-hidden">
         {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -41,7 +41,7 @@ const LoginPage = () => {
             backgroundImage: `url('https://plus.unsplash.com/premium_photo-1661494230538-dafa871a4b5d?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`,
           }}
         >
-          <div className="absolute inset-0 bg-dark-900/80" />
+          <div className="absolute inset-0 bg-slate-900/50" />
         </div>
 
         {/* Content */}
@@ -92,12 +92,12 @@ const LoginPage = () => {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-dark-900">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white">Welcome back</h2>
-            <p className="mt-2 text-dark-400">Please enter your details to sign in to your account.</p>
+            <h2 className="text-3xl font-bold text-slate-900">Welcome back</h2>
+            <p className="mt-2 text-slate-500">Please enter your details to sign in to your account.</p>
           </div>
 
           {/* OAuth Buttons */}
@@ -106,7 +106,7 @@ const LoginPage = () => {
               variant="outline"
               fullWidth
               onClick={() => handleOAuthLogin('google')}
-              className="border-dark-600 hover:bg-dark-800"
+              className="border-slate-300 text-slate-700 hover:bg-slate-100"
             >
               <img src="/google.png" alt="Google" className="w-5 h-5 object-contain" />
               <span className="ml-2">Continue with Google</span>
@@ -116,7 +116,7 @@ const LoginPage = () => {
               <Button
                 variant="outline"
                 onClick={() => handleOAuthLogin('microsoft')}
-                className="border-dark-600 hover:bg-dark-800"
+                className="border-slate-300 text-slate-700 hover:bg-slate-100"
               >
                 <img src="/microsoft.png" alt="Microsoft" className="w-5 h-5 object-contain" />
                 <span className="ml-2">Microsoft</span>
@@ -124,7 +124,7 @@ const LoginPage = () => {
               <Button
                 variant="outline"
                 onClick={() => handleOAuthLogin('github')}
-                className="border-dark-600 hover:bg-dark-800"
+                className="border-slate-300 text-slate-700 hover:bg-slate-100"
               >
                 <Github className="w-5 h-5" />
                 <span className="ml-2">GitHub</span>
@@ -135,10 +135,10 @@ const LoginPage = () => {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-dark-700" />
+              <div className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-dark-900 text-dark-400">or continue with email</span>
+              <span className="px-4 bg-white text-slate-500">or continue with email</span>
             </div>
           </div>
 
@@ -156,7 +156,7 @@ const LoginPage = () => {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-dark-300">
+                <label className="block text-sm font-medium text-slate-700">
                   Password
                 </label>
                 <Link
@@ -196,7 +196,7 @@ const LoginPage = () => {
           </form>
 
           {/* Sign Up Link */}
-          <p className="mt-6 text-center text-dark-400">
+          <p className="mt-6 text-center text-slate-500">
             Not a member?{' '}
             <Link to="/auth/register" className="text-primary-500 hover:text-primary-400 font-medium transition-colors">
               Start a 14-day free trial
@@ -204,10 +204,10 @@ const LoginPage = () => {
           </p>
 
           {/* Footer */}
-          <div className="mt-8 flex justify-center space-x-6 text-sm text-dark-500">
-            <a href="#" className="hover:text-dark-300 transition-colors">PRIVACY</a>
-            <a href="#" className="hover:text-dark-300 transition-colors">TERMS</a>
-            <a href="#" className="hover:text-dark-300 transition-colors">HELP</a>
+          <div className="mt-8 flex justify-center space-x-6 text-sm text-slate-500">
+            <a href="#" className="hover:text-slate-700 transition-colors">PRIVACY</a>
+            <a href="#" className="hover:text-slate-700 transition-colors">TERMS</a>
+            <a href="#" className="hover:text-slate-700 transition-colors">HELP</a>
           </div>
         </div>
       </div>

@@ -39,11 +39,11 @@ const UserAvatar = ({ user, size = 'md' }) => {
   );
 };
 
-const IconButton = ({ icon: Icon, onClick, badge, ariaLabel }) => (
+const IconButton = ({ icon: Icon, onClick, badge, ariaLabel, className = 'text-dark-300 hover:text-white hover:bg-dark-800' }) => (
   <button
     onClick={onClick}
     type="button"
-    className="relative p-2 text-dark-300 hover:text-white hover:bg-dark-800 rounded-full transition-colors"
+    className={`relative rounded-full p-2 transition-colors ${className}`}
     aria-label={ariaLabel}
   >
     <Icon className="w-5 h-5" />
@@ -72,7 +72,7 @@ const NavLinks = ({ links, isMobile = false, onLinkClick, textClass = 'text-dark
           to={link.href}
           onClick={onLinkClick}
           className={`text-sm font-medium transition-colors duration-200 ${
-            isActiveLink(link.href) ? 'text-white' : textClass
+            isActiveLink(link.href) ? 'text-primary-600' : textClass
           }`}
         >
           {link.label}
@@ -82,15 +82,15 @@ const NavLinks = ({ links, isMobile = false, onLinkClick, textClass = 'text-dark
   );
 };
 
-const SearchInput = ({ placeholder = 'Search meetings...', value, onChange }) => (
+const SearchInput = ({ placeholder = 'Search meetings...', value, onChange, inputClassName }) => (
   <div className="relative hidden md:block">
-    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
     <input
       type="text"
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className="pl-10 pr-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-sm text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 w-64 transition-colors"
+      className={inputClassName || 'w-64 rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500'}
     />
   </div>
 );
@@ -119,13 +119,13 @@ const PublicHeader = ({ onSignIn, onSignUp, isMobileMenuOpen, setIsMobileMenuOpe
       <div className="flex items-center justify-between h-16">
         <Logo />
 
-        <NavLinks links={publicNavLinks} textClass="text-white/70 hover:text-white" />
+        <NavLinks links={publicNavLinks} textClass="text-slate-500 hover:text-slate-900" />
 
         <div className="hidden md:flex items-center gap-4">
           <Link
             to="/auth/login"
             onClick={onSignIn}
-            className="text-sm font-medium text-white/80 hover:text-white transition-colors duration-200"
+            className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors duration-200"
           >
             Sign In
           </Link>
@@ -139,26 +139,26 @@ const PublicHeader = ({ onSignIn, onSignUp, isMobileMenuOpen, setIsMobileMenuOpe
         <MobileMenuButton
           isOpen={isMobileMenuOpen}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          colorClass="text-white/80 hover:text-white"
+          colorClass="text-slate-500 hover:text-slate-900"
         />
       </div>
 
       {isMobileMenuOpen && (
-        <div className="md:hidden py-4 border-t border-white/10">
+        <div className="md:hidden py-4 border-t border-slate-200">
           <NavLinks
             links={publicNavLinks}
             isMobile
-            textClass="text-white/70 hover:text-white"
+            textClass="text-slate-500 hover:text-slate-900"
             onLinkClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="flex flex-col gap-3 pt-4 mt-4 border-t border-white/10">
+          <div className="flex flex-col gap-3 pt-4 mt-4 border-t border-slate-200">
             <Link
               to="/auth/login"
               onClick={() => {
                 setIsMobileMenuOpen(false);
                 onSignIn?.();
               }}
-              className="text-sm font-medium text-white/80 hover:text-white transition-colors duration-200"
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors duration-200"
             >
               Sign In
             </Link>
@@ -183,9 +183,9 @@ const PublicHeader = ({ onSignIn, onSignUp, isMobileMenuOpen, setIsMobileMenuOpe
 const AppHeader = ({ user, searchValue, onSearchChange, onNotificationClick, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const appNavLinks = [
     { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Recordings', href: '/recordings' },
-    { label: 'Calendar', href: '/calendar' },
-    { label: 'Team', href: '/team' },
+    { label: 'Meeting Minutes', href: '/minutes' },
+    { label: 'Meeting Management', href: '/meetings' },
+    { label: 'Account Settings', href: '/settings' },
   ];
 
   return (
@@ -193,38 +193,38 @@ const AppHeader = ({ user, searchValue, onSearchChange, onNotificationClick, isM
       <div className="flex items-center justify-between h-16">
         <Logo />
 
-        <NavLinks links={appNavLinks} />
+        <NavLinks links={appNavLinks} textClass="text-slate-500 hover:text-slate-900" />
 
         <div className="hidden md:flex items-center gap-2">
           <SearchInput value={searchValue} onChange={onSearchChange} />
-          <IconButton icon={Bell} onClick={onNotificationClick} badge ariaLabel="Notifications" />
+          <IconButton icon={Bell} onClick={onNotificationClick} badge ariaLabel="Notifications" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
           <UserAvatar user={user} />
         </div>
 
         <MobileMenuButton
           isOpen={isMobileMenuOpen}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          colorClass="text-dark-300 hover:text-white"
+          colorClass="text-slate-500 hover:text-slate-900"
         />
       </div>
 
       {isMobileMenuOpen && (
-        <div className="md:hidden py-4 border-t border-dark-800">
+        <div className="md:hidden py-4 border-t border-slate-200">
           <div className="mb-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search meetings..."
                 value={searchValue}
                 onChange={onSearchChange}
-                className="w-full pl-10 pr-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-sm text-white placeholder-dark-400 focus:outline-none focus:border-primary-500"
+                className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none"
               />
             </div>
           </div>
           <NavLinks links={appNavLinks} isMobile onLinkClick={() => setIsMobileMenuOpen(false)} />
-          <div className="flex items-center gap-4 pt-4 mt-4 border-t border-dark-800">
-            <IconButton icon={Bell} onClick={onNotificationClick} ariaLabel="Notifications" />
+          <div className="flex items-center gap-4 pt-4 mt-4 border-t border-slate-200">
+            <IconButton icon={Bell} onClick={onNotificationClick} ariaLabel="Notifications" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
             <UserAvatar user={user} />
           </div>
         </div>
@@ -237,11 +237,11 @@ const MeetingHeader = ({ user, meetingTitle, onSettingsClick, onHelpClick }) => 
   <div className="flex items-center justify-between h-16">
     <Logo />
 
-    {meetingTitle && <div className="hidden md:block text-white text-sm font-medium">{meetingTitle}</div>}
+    {meetingTitle && <div className="hidden md:block text-slate-700 text-sm font-medium">{meetingTitle}</div>}
 
     <div className="flex items-center gap-1">
-      <IconButton icon={Settings} onClick={onSettingsClick} ariaLabel="Settings" />
-      <IconButton icon={MessageCircleQuestionMark} onClick={onHelpClick} ariaLabel="Help" />
+      <IconButton icon={Settings} onClick={onSettingsClick} ariaLabel="Settings" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
+      <IconButton icon={MessageCircleQuestionMark} onClick={onHelpClick} ariaLabel="Help" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
       <UserAvatar user={user} size="sm" />
     </div>
   </div>
@@ -263,11 +263,11 @@ const Header = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const headerShellClass =
-    variant === 'public' ? 'bg-transparent border-b border-white/10' : 'bg-dark-900 border-b border-dark-800';
+    variant === 'public' ? 'border-b border-slate-200 bg-white/95' : 'border-b border-slate-200 bg-white/95';
   const fixedClass = fixed
     ? variant === 'public'
-      ? 'fixed top-0 inset-x-0 z-50 bg-[#020916]/85 backdrop-blur-xl'
-      : 'fixed top-0 inset-x-0 z-50'
+      ? 'fixed top-0 inset-x-0 z-50 backdrop-blur'
+      : 'fixed top-0 inset-x-0 z-50 backdrop-blur'
     : '';
 
   return (
