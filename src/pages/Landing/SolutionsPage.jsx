@@ -115,58 +115,37 @@ const industrySolutions = [
 
 const SolutionsPage = () => {
   return (
-    <div className="min-h-screen bg-[#020c1b] text-white">
-      <div className="relative overflow-hidden border-b border-white/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_-6%,rgba(37,99,235,0.2),transparent_54%),radial-gradient(circle_at_88%_0%,rgba(14,165,233,0.1),transparent_42%)]" />
-
-        <div className="relative z-10">
-          <Header variant="public" fixed />
-
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-16 lg:pt-16 lg:pb-20">
-            <div className="grid gap-8 lg:grid-cols-[1fr_1.02fr] lg:items-center">
-              <div>
-                <h1 className="text-5xl sm:text-6xl font-black leading-[1.02] tracking-tight max-w-xl">
-                  Tailored Video
-                  <br />
-                  Solutions for
-                  <br />
-                  Every Industry
-                </h1>
-                <p className="mt-5 max-w-xl text-slate-300 text-base leading-relaxed">
-                  Discover how Smart Meet powers seamless collaboration across education, healthcare, and global enterprise.
-                  Secure, scalable, and intuitive.
-                </p>
-
-                <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:items-center">
-                  <Button size="lg" className="rounded-lg text-sm px-6">
-                    Book a Demo
-                  </Button>
-                  <Link
-                    to="/pricing"
-                    className="inline-flex items-center justify-center rounded-lg border border-white/20 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
-                  >
-                    View Pricing
-                  </Link>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-white/15 bg-[#0f2038] p-2 shadow-[0_20px_65px_rgba(0,0,0,0.38)]">
-                <div className="overflow-hidden rounded-lg">
-                  <img
-                    src="/landing.jpg"
-                    alt="Professional video collaboration"
-                    className="h-[300px] w-full object-cover object-center transition-transform duration-700 hover:scale-105"
-                  />
-                </div>
-              </div>
+    <div className="min-h-screen bg-white text-slate-900">
+      <Header variant="public" fixed />
+      <section className="mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
+        <div className="grid items-center gap-8 lg:grid-cols-[1fr_1fr]">
+          <div>
+            <h1 className="max-w-xl text-5xl font-bold tracking-tight">
+              Tailored video solutions for every industry
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600">
+              Discover how Smart Meet powers seamless collaboration across education, healthcare, and global enterprise.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Button size="lg">Book a Demo</Button>
+              <Link
+                to="/pricing"
+                className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                View Pricing
+              </Link>
             </div>
-          </section>
-        </div>
-      </div>
+          </div>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
-        <p className="text-center text-xs tracking-[0.16em] text-primary-400 font-semibold uppercase">Industry solutions</p>
-        <h2 className="mt-4 text-center text-4xl sm:text-5xl font-black leading-tight max-w-4xl mx-auto">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-2">
+            <img src="/landing.jpg" alt="Professional video collaboration" className="h-[300px] w-full rounded-lg object-cover object-center" />
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-primary-600">Industry solutions</p>
+        <h2 className="mx-auto mt-4 max-w-4xl text-center text-4xl font-bold leading-tight">
           Empowering your team with specialized tools
         </h2>
 
@@ -181,15 +160,15 @@ const SolutionsPage = () => {
                     <IndustryIcon className="h-4.5 w-4.5" />
                   </span>
                   <div>
-                    <h3 className="text-3xl font-black">{industry.title}</h3>
-                    <p className="mt-3 max-w-3xl text-slate-300 leading-relaxed">{industry.description}</p>
+                    <h3 className="text-3xl font-bold">{industry.title}</h3>
+                    <p className="mt-3 max-w-3xl leading-relaxed text-slate-600">{industry.description}</p>
                   </div>
                 </div>
 
                 <div className="mt-7 grid gap-4 lg:grid-cols-3">
                   {industry.cards.map((card) => {
                     return (
-                      <div key={card.title} className="rounded-xl border border-[#27446c] bg-[#0c1d35] p-3 transition-transform duration-300 hover:-translate-y-1">
+                      <div key={card.title} className="rounded-xl border border-slate-200 bg-white p-3 transition-transform duration-300 hover:-translate-y-1">
                         <div className="h-44 rounded-lg relative overflow-hidden">
                           <img
                             src={card.image}
@@ -197,22 +176,22 @@ const SolutionsPage = () => {
                             className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
                             loading="lazy"
                           />
-                          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,12,27,0.06)_0%,rgba(2,12,27,0.44)_100%)]" />
+                          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(15,23,42,0.34)_100%)]" />
                         </div>
-                        <h4 className="mt-4 text-lg font-bold">{card.title}</h4>
-                        <p className="mt-2 text-sm text-slate-300 leading-relaxed">{card.description}</p>
+                        <h4 className="mt-4 text-lg font-semibold">{card.title}</h4>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.description}</p>
                       </div>
                     );
                   })}
 
-                  <div className="rounded-xl border border-[#27446c] bg-[#0b2342] p-6 transition-transform duration-300 hover:-translate-y-1">
-                    <Quote className="h-7 w-7 text-primary-400" />
-                    <p className="mt-5 text-sm leading-relaxed text-slate-200">&quot;{industry.quote.text}&quot;</p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 transition-transform duration-300 hover:-translate-y-1">
+                    <Quote className="h-7 w-7 text-primary-500" />
+                    <p className="mt-5 text-sm leading-relaxed text-slate-700">&quot;{industry.quote.text}&quot;</p>
                     <div className="mt-7 flex items-center gap-3">
                       <span className="h-9 w-9 rounded-full bg-slate-500/40" />
                       <div>
-                        <p className="text-sm font-semibold text-white">{industry.quote.author}</p>
-                        <p className="text-xs text-slate-300">{industry.quote.role}</p>
+                        <p className="text-sm font-semibold text-slate-900">{industry.quote.author}</p>
+                        <p className="text-xs text-slate-500">{industry.quote.role}</p>
                       </div>
                     </div>
                   </div>
@@ -225,17 +204,17 @@ const SolutionsPage = () => {
 
       <section className="pb-16 pt-4">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-primary-300/35 bg-[linear-gradient(135deg,#2e77eb,#2462cc)] px-6 py-14 sm:px-12 text-center">
-            <h2 className="text-4xl sm:text-5xl font-black leading-tight">Ready to transform your organization?</h2>
-            <p className="mt-4 text-blue-100 max-w-2xl mx-auto">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-14 text-center sm:px-12">
+            <h2 className="text-4xl font-bold leading-tight">Ready to transform your organization?</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-slate-600">
               Join over 50,000 companies that trust Nexus Meet for their mission-critical communications.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button size="lg" variant="none" className="rounded-lg min-w-44 bg-white text-primary-700 hover:bg-blue-100 focus:ring-white font-semibold">
+              <Button size="lg" className="min-w-44 rounded-lg">
                 Start Free Trial
               </Button>
-              <Button size="lg" variant="none" className="rounded-lg min-w-44 border border-white/50 bg-white/10 text-white hover:bg-white/20 focus:ring-white">
+              <Button size="lg" variant="outline" className="min-w-44 rounded-lg border-slate-300 text-slate-700 hover:bg-slate-100">
                 Contact Sales
               </Button>
             </div>

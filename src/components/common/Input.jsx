@@ -21,22 +21,22 @@ const Input = forwardRef(({
   return (
     <div className={`${containerClassName}`}>
       {label && (
-        <label className="block text-sm font-medium text-dark-300 mb-1.5">
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">
           {label}
         </label>
       )}
       <div className="relative">
         {Icon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Icon className="h-5 w-5 text-dark-400" />
+            <Icon className="h-5 w-5 text-slate-400" />
           </div>
         )}
         <input
           ref={ref}
           type={inputType}
           className={`
-            w-full bg-dark-800 border border-dark-600 rounded-lg
-            text-white placeholder-dark-400
+            w-full rounded-lg border border-slate-300 bg-white
+            text-slate-900 placeholder-slate-400
             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
             transition-colors duration-200
             ${Icon ? 'pl-10' : 'pl-4'} 
@@ -51,14 +51,14 @@ const Input = forwardRef(({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-dark-400 hover:text-dark-300 transition-colors"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
           >
             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
         )}
       </div>
       {(error || helperText) && (
-        <p className={`mt-1.5 text-sm ${error ? 'text-red-500' : 'text-dark-400'}`}>
+        <p className={`mt-1.5 text-sm ${error ? 'text-red-500' : 'text-slate-500'}`}>
           {error || helperText}
         </p>
       )}

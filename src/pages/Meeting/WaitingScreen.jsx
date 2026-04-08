@@ -1,12 +1,12 @@
-import {ArrowRight, Calendar, Camera, Clock, Clock2, LucideLink, Mic, Speaker, Video} from "lucide-react";
-import {Link} from "react-router-dom";
-import {Button} from "../../components/common/index.js";
-import {useEffect, useRef, useState} from "react";
+import { ArrowRight, Calendar, Clock, Link as LinkIcon, Mic, MicOff, MonitorSpeaker, UsersRound, Video, VideoOff } from 'lucide-react';
+import { Button } from '../../components/common/index.js';
+import { useEffect, useRef, useState } from 'react';
 
 export default function WaitingScreen() {
   const videoRef = useRef(null);
   const [stream, setStream] = useState(null);
   const [isCamOn, setIsCamOn] = useState(true);
+  const [isMicOn, setIsMicOn] = useState(true);
 
   useEffect(() => {
     const openCamera = async () => {
@@ -17,196 +17,185 @@ export default function WaitingScreen() {
         });
 
         setStream(mediaStream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-        }
-      } catch (err){
-        console.log("Lỗi truy cập camera:", err)
+        if (videoRef.current) videoRef.current.srcObject = mediaStream;
+      } catch (err) {
+        console.error('Loi truy cap camera:', err);
       }
     };
 
     openCamera();
 
     return () => {
-      if(stream) {
-        stream.getTracks().forEach(track => {
+      if (stream) {
+        stream.getTracks().forEach((track) => {
           track.stop();
-        })
+        });
       }
-    }
-
-  }, [])
+    };
+  }, [stream]);
 
   const toggleCamera = async () => {
-    if(isCamOn) {
-      stream.getTracks().forEach(track => {
-        track.stop();
-        setIsCamOn(false);
-      })
+    if (!stream) return;
+    if (isCamOn) {
+      stream.getVideoTracks().forEach((track) => {
+        track.enabled = false;
+      });
+      setIsCamOn(false);
     } else {
-      try{
+      try {
         const newStream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
+          audio: isMicOn,
           video: true,
-        })
+        });
         setStream(newStream);
         if (videoRef.current) {
           videoRef.current.srcObject = newStream;
         }
         setIsCamOn(true);
-
-      } catch(err){
-        console.log("Không thể mở cam: ", err)
+      } catch (err) {
+        console.error('Khong the mo camera:', err);
       }
     }
-  }
+  };
+
+  const toggleMic = () => {
+    if (!stream) return;
+    stream.getAudioTracks().forEach((track) => {
+      track.enabled = !isMicOn;
+    });
+    setIsMicOn((prev) => !prev);
+  };
+
+  const people = [
+    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    'https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=200&q=80',
+  ];
 
   return (
-    <div className=" h-full bg-dark-900 overflow-hidden text-white px-24 py-16  ">
-    {/*TODO: Header here*/}
+    <div className="h-full overflow-auto bg-slate-50 px-4 py-6 text-slate-900 md:px-10 lg:px-16">
+      <div className="mx-auto h-full max-w-7xl">
+        <div className="grid h-full gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 lg:p-8">
+            <p className="text-3xl font-extrabold tracking-tight">Ready to join?</p>
+            <p className="mt-2 text-sm text-slate-600">
+              Check your audio and video before entering the call.
+            </p>
 
-    {/*Body*/}
-    <div className="h-full flex flex-row">
-      {/* Left side */}
-      <div className="w-2/3 pr-24">
-        <p className="font-bold text-3xl py-2"> Ready to join ?</p>
-        <p className="font-light text-lg text-gray-200">
-          Check your audio and video before entering the call
-        </p>
-
-        <div className=" h-2/3 rounded-3xl overflow-hidden my-5 border border-gray-200">
-          {/*<img className="w-full h-full object-cover "*/}
-          {/*     src="https://allprodad.com/wp-content/uploads/2021/03/05-12-21-happy-people.jpg" alt="aas"/>*/}
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-
-        <div className="w-full flex flex-row justify-center gap-5 pt-2">
-          <button className="flex flex-col items-center">
-            <div className="p-3 border rounded-full bg-gray-500/20 mb-3">
-              <Mic/>
+            <div className="mt-6 h-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+              {isCamOn ? (
+                <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
+              ) : (
+                <div className="grid h-full place-items-center text-slate-400">
+                  <div className="text-center">
+                    <VideoOff className="mx-auto h-10 w-10" />
+                    <p className="mt-3 text-sm">Camera is currently off</p>
+                  </div>
+                </div>
+              )}
             </div>
-            Mic on
-          </button>
 
-          <button className="flex flex-col items-center"
-                  onClick={toggleCamera}
-          >
-            <div className="p-3 border rounded-full bg-gray-500/20 mb-3">
-              <Video/>
+            <div className="mt-6 flex items-center justify-center gap-4">
+              <button
+                type="button"
+                onClick={toggleMic}
+                className="group flex flex-col items-center text-xs text-slate-600"
+              >
+                <span className="mb-2 grid h-12 w-12 place-items-center rounded-full border border-slate-200 bg-slate-50 transition-colors group-hover:bg-slate-100">
+                  {isMicOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5 text-rose-400" />}
+                </span>
+                {isMicOn ? 'Mic on' : 'Mic off'}
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleCamera}
+                className="group flex flex-col items-center text-xs text-slate-600"
+              >
+                <span className="mb-2 grid h-12 w-12 place-items-center rounded-full border border-slate-200 bg-slate-50 transition-colors group-hover:bg-slate-100">
+                  {isCamOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5 text-rose-400" />}
+                </span>
+                {isCamOn ? 'Camera on' : 'Camera off'}
+              </button>
             </div>
-            Cam on
-          </button>
-        </div>
+          </section>
 
-      </div>
+          <aside className="rounded-3xl border border-slate-200 bg-white p-6 lg:p-8">
+            <p className="flex items-center gap-2 text-sm font-bold tracking-wide text-primary-600">
+              <Calendar className="h-4 w-4" />
+              MEETING DETAILS
+            </p>
 
-      {/*  Right side */}
-      <div className="w-2/5 bg-blue-950 rounded-xl p-10">
+            <h2 className="mt-4 text-3xl font-extrabold leading-tight">
+              Weekly Sync: Product Roadmap & Sprint Planning
+            </h2>
 
-        <p className="text-primary-600 font-bold flex flex-row mb-5">
-          <Calendar className="mr-2"/>
-          MEETING DETAILS
-        </p>
-
-        {/* TODO: Input meeting name here.*/}
-        <p className="text-4xl font-bold mb-5">
-          Weekly Sync: Product Roadmap & Sprint Planning
-        </p>
-
-        <div className=" text-gray-400 flex flex-row gap-5">
-          <div className="flex flex-row items-center gap-1">
-            <Clock className="w-4 h-4"/>
-            <span>10:00 AM - 11:00 AM</span>
-          </div>
-
-          <div className="flex flex-row items-center gap-1">
-            <LucideLink className="w-4 h-4"/>
-            <span>smart.meet/prod-sync</span>
-          </div>
-        </div>
-
-        <div className="border-t my-10"></div>
-
-        <span className="text-gray-400">
-          John, Sarah, and 3 others are already here
-        </span>
-
-        {/* Avatar */}
-        <div>
-          <div className="flex items-center py-3">
-            <img
-              className="w-10 h-10 rounded-full border-2 border-dark-950 object-cover"
-              src="https://img.freepik.com/free-photo/emotions-people-concept-headshot-serious-looking-handsome-man-with-beard-looking-confident-determined_1258-26730.jpg?semt=ais_hybrid&w=740&q=80"
-              alt="user1"
-            />
-
-            <img
-              className="w-10 h-10 rounded-full border-2 border-dark-950 object-cover -ml-2"
-              src="https://img.freepik.com/free-photo/emotions-people-concept-headshot-serious-looking-handsome-man-with-beard-looking-confident-determined_1258-26730.jpg?semt=ais_hybrid&w=740&q=80"
-              alt="user2"
-            />
-
-            <img
-              className="w-10 h-10 rounded-full border-2 border-dark-950 object-cover -ml-2"
-              src="https://img.freepik.com/free-photo/emotions-people-concept-headshot-serious-looking-handsome-man-with-beard-looking-confident-determined_1258-26730.jpg?semt=ais_hybrid&w=740&q=80"
-              alt="user3"
-            />
-
-            <div
-              className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-dark-950 bg-dark-800 text-xs font-medium text-gray-300 -ml-2">
-              +2
+            <div className="mt-5 flex flex-wrap gap-4 text-sm text-slate-600">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span>10:00 AM - 11:00 AM</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <LinkIcon className="h-4 w-4" />
+                <span>smart.meet/prod-sync</span>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/*Device settings*/}
-        <div>
-          <div className="flex flex-row justify-between py-2">
-            <span className="text-gray-400">Device settings</span>
-            <button className="bg-none text-primary-600 hover:text-primary-700">
-              Change
+            <div className="my-8 border-t border-slate-200" />
+
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <UsersRound className="h-4 w-4" />
+              John, Sarah, and 3 others are already here
+            </div>
+
+            <div className="mt-4 flex items-center">
+              {people.map((person, index) => (
+                <img
+                  key={person}
+                  src={person}
+                  alt="participant avatar"
+                  className={`h-10 w-10 rounded-full border-2 border-white object-cover ${index === 0 ? '' : '-ml-2'}`}
+                />
+              ))}
+              <div className="-ml-2 grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-slate-200 text-xs font-semibold text-slate-700">
+                +2
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-sm text-slate-600">Device settings</span>
+                  <button type="button" className="text-sm font-medium text-primary-600 hover:text-primary-700">
+                  Change
+                </button>
+              </div>
+
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                <div className="flex items-center gap-2">
+                  <Mic className="h-4 w-4 text-slate-500" />
+                  <span>MacBook Pro Microphone (Built-in)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MonitorSpeaker className="h-4 w-4 text-slate-500" />
+                  <span>AirPods Pro (Bluetooth)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4 text-slate-500" />
+                  <span>MacBook Camera (Built-in)</span>
+                </div>
+              </div>
+            </div>
+
+            <Button className="mt-8 h-12 w-full text-base font-bold" icon={ArrowRight} iconPosition="right">
+              Join now
+            </Button>
+
+            <button type="button" className="mt-4 w-full text-center text-sm text-slate-600 hover:text-primary-600">
+              Join with audio only
             </button>
-          </div>
-
-          <div className="bg-gray-700 opacity-60 p-5 rounded-xl flex flex-col gap-2 ">
-            <div className="flex flex-row items-center gap-2">
-              <Mic className="w-4 h-4"/>
-              <span>MacBook Pro Microphone (Built-in)</span>
-            </div>
-
-            <div className="flex flex-row items-center gap-2">
-              <Speaker className="w-4 h-4"/>
-              <span>AirPods Pro (Bluetooth)</span>
-            </div>
-
-            <div className="flex flex-row items-center gap-2">
-              <Video className="w-4 h-4"/>
-              <span>MacBook Camera (Built-in)</span>
-            </div>
-
-          </div>
-
-          <Button className="w-full h-14 my-10 gap-2 text-xl font-extrabold">
-            Join Now
-            <ArrowRight strokeWidth={3}/>
-          </Button>
+          </aside>
         </div>
-
-        <button className="w-full text-gray-400 hover:text-primary-600">
-          Join with audio only
-        </button>
-
       </div>
-
     </div>
-  </div>
-
-  )
+  );
 }

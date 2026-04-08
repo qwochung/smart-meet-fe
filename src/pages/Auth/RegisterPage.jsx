@@ -73,9 +73,9 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-slate-50">
       {/* Left Side - Hero Section */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-dark-900 overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 relative bg-slate-100 overflow-hidden">
         {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -83,7 +83,7 @@ const RegisterPage = () => {
             backgroundImage: `url('https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1470&auto=format&fit=crop')`,
           }}
         >
-          <div className="absolute inset-0 bg-dark-900/70" />
+          <div className="absolute inset-0 bg-slate-900/50" />
         </div>
 
         {/* Content */}
@@ -122,12 +122,12 @@ const RegisterPage = () => {
       </div>
 
       {/* Right Side - Register Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-dark-900">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white">Create an account</h2>
-            <p className="mt-2 text-dark-400">Start your 14-day free trial. No credit card required.</p>
+            <h2 className="text-3xl font-bold text-slate-900">Create an account</h2>
+            <p className="mt-2 text-slate-500">Start your 14-day free trial. No credit card required.</p>
           </div>
 
           {/* OAuth Buttons */}
@@ -136,7 +136,7 @@ const RegisterPage = () => {
               variant="outline"
               fullWidth
               onClick={() => handleOAuthLogin('google')}
-              className="border-dark-600 hover:bg-dark-800"
+              className="border-slate-300 text-slate-700 hover:bg-slate-100"
             >
               <img src="/google.png" alt="Google" className="w-5 h-5 object-contain" />
               <span className="ml-2">Continue with Google</span>
@@ -146,7 +146,7 @@ const RegisterPage = () => {
               <Button
                 variant="outline"
                 onClick={() => handleOAuthLogin('microsoft')}
-                className="border-dark-600 hover:bg-dark-800"
+                className="border-slate-300 text-slate-700 hover:bg-slate-100"
               >
                 <img src="/microsoft.png" alt="Microsoft" className="w-5 h-5 object-contain" />
                 <span className="ml-2">Microsoft</span>
@@ -154,7 +154,7 @@ const RegisterPage = () => {
               <Button
                 variant="outline"
                 onClick={() => handleOAuthLogin('github')}
-                className="border-dark-600 hover:bg-dark-800"
+                className="border-slate-300 text-slate-700 hover:bg-slate-100"
               >
                 <Github className="w-5 h-5" />
                 <span className="ml-2">GitHub</span>
@@ -165,10 +165,10 @@ const RegisterPage = () => {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-dark-700" />
+              <div className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-dark-900 text-dark-400">or continue with email</span>
+              <span className="px-4 bg-white text-slate-500">or continue with email</span>
             </div>
           </div>
 
@@ -233,7 +233,7 @@ const RegisterPage = () => {
           </form>
 
           {/* Sign In Link */}
-          <p className="mt-6 text-center text-dark-400">
+          <p className="mt-6 text-center text-slate-500">
             Already have an account?{' '}
             <Link to="/auth/login" className="text-primary-500 hover:text-primary-400 font-medium transition-colors">
               Sign in
@@ -241,10 +241,10 @@ const RegisterPage = () => {
           </p>
 
           {/* Footer */}
-          <div className="mt-8 flex justify-center space-x-6 text-sm text-dark-500">
-            <a href="#" className="hover:text-dark-300 transition-colors">PRIVACY</a>
-            <a href="#" className="hover:text-dark-300 transition-colors">TERMS</a>
-            <a href="#" className="hover:text-dark-300 transition-colors">HELP</a>
+          <div className="mt-8 flex justify-center space-x-6 text-sm text-slate-500">
+            <a href="#" className="hover:text-slate-700 transition-colors">PRIVACY</a>
+            <a href="#" className="hover:text-slate-700 transition-colors">TERMS</a>
+            <a href="#" className="hover:text-slate-700 transition-colors">HELP</a>
           </div>
         </div>
       </div>

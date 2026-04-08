@@ -2,11 +2,11 @@ import { forwardRef } from 'react';
 
 const variants = {
   primary: 'bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500',
-  secondary: 'bg-dark-700 hover:bg-dark-600 text-white focus:ring-dark-500',
-  outline: 'border border-dark-600 hover:bg-dark-700 text-white focus:ring-dark-500',
-  ghost: 'hover:bg-dark-700 text-white focus:ring-dark-500',
+  secondary: 'bg-slate-900 hover:bg-slate-800 text-white focus:ring-slate-500',
+  outline: 'border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 focus:ring-slate-400',
+  ghost: 'hover:bg-slate-100 text-slate-700 focus:ring-slate-400',
   danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
-  none: 'bg-none ',
+  none: 'bg-transparent',
 };
 
 const sizes = {
@@ -28,7 +28,7 @@ const Button = forwardRef(({
   fullWidth = false,
   ...props
 }, ref) => {
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-900 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed';
   
   const widthClass = fullWidth ? 'w-full' : '';
   
