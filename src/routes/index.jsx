@@ -1,6 +1,6 @@
 import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
 import {LoginPage, RegisterPage} from '../pages/Auth';
-import {MeetingPage} from "../pages/Meeting/index.js";
+import {JoinMeetingPage, MeetingPage} from "../pages/Meeting/index.js";
 import {AppLayout, MainLayout} from "../layouts/index.js";
 import {HomePage} from '../pages/Home';
 import {FeaturesPage, PricingPage, ResourcesPage, SolutionsPage} from '../pages/Landing/index.js';
@@ -27,6 +27,7 @@ const AppRoutes = () => {
 
         {/*Meeting */}
         <Route element={<MainLayout/>}>
+          <Route path="/join" element={<JoinMeetingPage/>}/>
           <Route path="/room/*" element={<MeetingPage/>}/>
         </Route>
 
