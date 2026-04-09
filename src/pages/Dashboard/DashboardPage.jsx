@@ -48,6 +48,9 @@ export default function DashboardPage() {
           <p className="mt-1 text-sm text-slate-500">Quick overview of meetings, minutes, and upcoming activities.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
+          <Link to="/join">
+            <Button variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-100">Join meeting</Button>
+          </Link>
           <Link to="/meetings/new">
             <Button icon={Plus}>New meeting</Button>
           </Link>

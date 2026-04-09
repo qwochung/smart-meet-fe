@@ -24,6 +24,9 @@ export default function HomePage() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link to="/minutes"><Button size="lg">Go to Workspace</Button></Link>
+              <Link to="/join" className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                Join a Meeting
+              </Link>
               <Link to="/features" className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
                 Explore Features <ArrowRight className="h-4 w-4" />
               </Link>
