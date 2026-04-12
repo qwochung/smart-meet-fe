@@ -11,16 +11,16 @@ const Checkbox = forwardRef(({
         ref={ref}
         type="checkbox"
         className={`
-          w-4 h-4 rounded border-dark-600 bg-dark-800
+          w-4 h-4 rounded border-slate-300 bg-white
           text-primary-600 focus:ring-primary-500 focus:ring-offset-0
-          focus:ring-2 focus:ring-offset-dark-900
+          focus:ring-2 focus:ring-offset-white
           transition-colors duration-200
           ${className}
         `}
         {...props}
       />
       {label && (
-        <span className="ml-2 text-sm text-dark-300">{label}</span>
+        <span className="ml-2 text-sm text-slate-600">{label}</span>
       )}
     </label>
   );
