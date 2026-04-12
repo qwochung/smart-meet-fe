@@ -4,28 +4,28 @@ import { Button, Header, SiteFooter } from '../../components/common';
 
 const featureGroups = [
   {
-    title: 'Studio-quality Calls',
-    summary: 'Run smooth meetings with adaptive bitrate and AI denoise tuned for hybrid teams.',
+    title: 'Cuộc gọi chất lượng studio',
+    summary: 'Vận hành cuộc họp mượt mà với bitrate thích ứng và khử nhiễu AI cho nhóm hybrid.',
     icon: Video,
   },
   {
-    title: 'AI-Powered Notes',
-    summary: 'Auto-capture decisions, owners, and action items in every room session.',
+    title: 'Ghi chú bằng AI',
+    summary: 'Tự động ghi lại quyết định, người phụ trách và việc cần làm sau mỗi buổi họp.',
     icon: Sparkles,
   },
   {
-    title: 'Collaborative Workspace',
-    summary: 'Use live whiteboards and shared canvases to build ideas during calls.',
+    title: 'Không gian cộng tác',
+    summary: 'Dùng bảng trắng trực tiếp và canvas chia sẻ để phát triển ý tưởng khi họp.',
     icon: UsersRound,
   },
   {
-    title: 'Enterprise Security',
-    summary: 'Protect meetings with encrypted streams, secure rooms, and policy controls.',
+    title: 'Bảo mật doanh nghiệp',
+    summary: 'Bảo vệ cuộc họp với luồng mã hóa, phòng họp an toàn và chính sách kiểm soát.',
     icon: ShieldCheck,
   },
   {
-    title: 'Workflow Integrations',
-    summary: 'Connect recordings and highlights with CRM, project tools, and docs.',
+    title: 'Tích hợp quy trình',
+    summary: 'Liên kết bản ghi và điểm nhấn với CRM, công cụ dự án và tài liệu.',
     icon: Layers,
   },
 ];
@@ -35,17 +35,17 @@ const FeaturesPage = () => {
     <div className="min-h-screen bg-white text-slate-900">
       <Header variant="public" fixed />
       <section className="mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Product Features</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Tính năng sản phẩm</p>
         <h1 className="mt-4 max-w-3xl text-5xl font-bold tracking-tight">
-          Everything your team needs for high-impact collaboration.
+          Mọi thứ đội ngũ bạn cần cho hợp tác hiệu quả cao.
         </h1>
         <p className="mt-5 max-w-2xl text-slate-600">
-          Explore key capabilities that keep meetings focused, searchable, and actionable.
+          Khám phá các khả năng giúp cuộc họp tập trung, dễ tra cứu và dễ hành động.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link to="/auth/register"><Button size="lg">Start Free Trial</Button></Link>
+          <Link to="/auth/register"><Button size="lg">Dùng thử miễn phí</Button></Link>
           <Link to="/" className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
-            Back to Home <ArrowRight className="h-4 w-4" />
+            Quay về trang chủ <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </section>
@@ -72,18 +72,18 @@ const FeaturesPage = () => {
         <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
           <article className="rounded-xl border border-slate-200 bg-white p-6">
             <MonitorPlay className="h-7 w-7 text-primary-600" />
-            <h3 className="mt-4 text-lg font-semibold">Reliable Broadcast</h3>
-            <p className="mt-2 text-sm text-slate-600">Share demos and livestream sessions without lag spikes or quality drops.</p>
+            <h3 className="mt-4 text-lg font-semibold">Truyền hình ổn định</h3>
+            <p className="mt-2 text-sm text-slate-600">Chia sẻ demo và livestream mà không giật lag hay giảm chất lượng.</p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-white p-6">
             <ShieldCheck className="h-7 w-7 text-primary-600" />
-            <h3 className="mt-4 text-lg font-semibold">Compliance Ready</h3>
-            <p className="mt-2 text-sm text-slate-600">Match enterprise standards with role-based controls and audit visibility.</p>
+            <h3 className="mt-4 text-lg font-semibold">Sẵn sàng tuân thủ</h3>
+            <p className="mt-2 text-sm text-slate-600">Đạt chuẩn doanh nghiệp với kiểm soát theo vai trò và theo dõi kiểm toán.</p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-white p-6">
             <Sparkles className="h-7 w-7 text-primary-600" />
-            <h3 className="mt-4 text-lg font-semibold">AI Productivity</h3>
-            <p className="mt-2 text-sm text-slate-600">Auto summaries and follow-up tasks after each meeting.</p>
+            <h3 className="mt-4 text-lg font-semibold">Năng suất AI</h3>
+            <p className="mt-2 text-sm text-slate-600">Tự động tóm tắt và tạo công việc theo sau sau mỗi cuộc họp.</p>
           </article>
         </div>
       </section>

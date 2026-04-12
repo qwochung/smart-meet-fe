@@ -10,7 +10,7 @@ const LandingPlaceholderPage = ({ title, description }) => {
           <Header variant="public" fixed />
           <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 text-center">
             <span className="inline-flex rounded-full bg-primary-100 text-primary-700 border border-primary-200 px-3 py-1 text-xs tracking-wide font-semibold uppercase">
-              Coming Soon
+              Sắp ra mắt
             </span>
             <h1 className="mt-5 text-5xl sm:text-6xl font-black">{title}</h1>
             <p className="mt-6 text-slate-600 text-lg max-w-2xl mx-auto">{description}</p>
@@ -18,7 +18,7 @@ const LandingPlaceholderPage = ({ title, description }) => {
               to="/features"
               className="mt-9 inline-flex items-center gap-2 rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
             >
-              Explore Features
+              Khám phá tính năng
               <ArrowRight className="w-4 h-4" />
             </Link>
           </section>

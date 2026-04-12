@@ -8,7 +8,7 @@ import {
 
 const participants = [
   {
-    id: 1, name: 'Alex Rivera', role: 'Active Speaker', isSpeaking: true,
+    id: 1, name: 'Alex Rivera', role: 'Người nói chính', isSpeaking: true,
     isMuted: false, hasVideo: true,
     image: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?auto=format&fit=crop&q=80&w=400&h=400',
     active: true,
@@ -22,7 +22,7 @@ const participants = [
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400&h=400',
   },
   {
-    id: 4, name: 'You', isSpeaking: false, isMuted: true, hasVideo: true,
+    id: 4, name: 'Bạn', isSpeaking: false, isMuted: true, hasVideo: true,
     image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400&h=400',
     self: true,
   },
@@ -34,9 +34,9 @@ const participants = [
 ];
 
 const initialMessages = [
-  { id: 1, sender: 'Alex Rivera', time: '10:42 AM', content: "I've shared the latest design docs in the channel. Can everyone take a look?", isSelf: false },
-  { id: 2, sender: 'You', time: '10:43 AM', content: 'Thanks Alex, looking at them now. The navigation feels much smoother.', isSelf: true },
-  { id: 3, sender: 'Sarah Chen', time: '10:44 AM', content: "Agreed. Let's discuss the mobile breakpoints in 5 minutes.", isSelf: false },
+  { id: 1, sender: 'Alex Rivera', time: '10:42', content: 'Mình đã chia sẻ tài liệu thiết kế mới nhất trong kênh. Mọi người xem giúp nhé?', isSelf: false },
+  { id: 2, sender: 'Bạn', time: '10:43', content: 'Cảm ơn Alex, mình đang xem đây. Điều hướng mượt hơn nhiều.', isSelf: true },
+  { id: 3, sender: 'Sarah Chen', time: '10:44', content: 'Đồng ý. Chúng ta trao đổi về breakpoint mobile trong 5 phút nữa nhé.', isSelf: false },
 ];
 
 function SpeakerBars() {
@@ -107,7 +107,7 @@ function ParticipantTile({ p }) {
         {p.active && <SpeakerBars />}
         <span style={{ fontSize: 11, fontWeight: 500, color: 'white' }}>
           {p.name}
-          {p.active && <span style={{ color: '#93c5fd', marginLeft: 5, fontSize: 10 }}>Active</span>}
+          {p.active && <span style={{ color: '#93c5fd', marginLeft: 5, fontSize: 10 }}>Đang nói</span>}
         </span>
       </div>
     </div>
@@ -119,7 +119,7 @@ function ChatMessage({ msg }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: msg.isSelf ? 'flex-end' : 'flex-start' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, padding: '0 4px' }}>
         {!msg.isSelf && <span style={{ fontSize: 11, fontWeight: 500, color: '#93c5fd' }}>{msg.sender}</span>}
-        {msg.isSelf && <span style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.45)' }}>You</span>}
+        {msg.isSelf && <span style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.45)' }}>Bạn</span>}
         <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{msg.time}</span>
       </div>
       <div style={{
@@ -186,7 +186,7 @@ export default function MeetingRoomPage() {
   const sendMessage = () => {
     if (!message.trim()) return;
     const now = new Date();
-    const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     setMessages(prev => [...prev, { id: Date.now(), sender: 'You', time, content: message.trim(), isSelf: true }]);
     setMessage('');
   };
@@ -237,7 +237,7 @@ export default function MeetingRoomPage() {
             </Link>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.92)', letterSpacing: '0.01em' }}>
-                Project Sync
+                Đồng bộ dự án
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 1 }}>
                 <span style={{
@@ -245,7 +245,7 @@ export default function MeetingRoomPage() {
                   animation: 'livePulse 1.5s ease-in-out infinite', display: 'inline-block',
                 }} />
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', letterSpacing: '0.05em' }}>
-                  LIVE • {formatTime(elapsed)}
+                  TRỰC TIẾP • {formatTime(elapsed)}
                 </span>
               </div>
             </div>
@@ -308,7 +308,7 @@ export default function MeetingRoomPage() {
                 borderBottom: '0.5px solid rgba(255,255,255,0.07)',
               }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.88)' }}>
-                  Group Chat
+                  Trò chuyện nhóm
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button style={{
@@ -319,7 +319,7 @@ export default function MeetingRoomPage() {
                     color: '#a78bfa', fontSize: 11, fontWeight: 500, cursor: 'pointer',
                   }}>
                     <Zap size={11} />
-                    AI Summary
+                    Tóm tắt AI
                   </button>
                   <button onClick={() => setChatOpen(false)} style={{
                     background: 'none', border: 'none', cursor: 'pointer',
@@ -351,7 +351,7 @@ export default function MeetingRoomPage() {
                       color: 'rgba(255,255,255,0.85)', fontSize: 12,
                       fontFamily: 'inherit',
                     }}
-                    placeholder="Message team…"
+                    placeholder="Nhắn cho cả nhóm…"
                     value={message}
                     onChange={e => setMessage(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && sendMessage()}
@@ -383,19 +383,19 @@ export default function MeetingRoomPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* Mic */}
-            <ControlBtn active={micActive} onClick={() => setMicActive(v => !v)} title={micActive ? 'Mute' : 'Unmute'}>
+            <ControlBtn active={micActive} onClick={() => setMicActive(v => !v)} title={micActive ? 'Tắt mic' : 'Bật mic'}>
               {micActive ? <Mic size={17} /> : <MicOff size={17} color="#f87171" />}
             </ControlBtn>
 
             {/* Camera */}
-            <ControlBtn active={videoActive} onClick={() => setVideoActive(v => !v)} title={videoActive ? 'Stop video' : 'Start video'}>
+            <ControlBtn active={videoActive} onClick={() => setVideoActive(v => !v)} title={videoActive ? 'Tắt video' : 'Bật video'}>
               {videoActive ? <Video size={17} /> : <VideoOff size={17} />}
             </ControlBtn>
 
             <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', margin: '0 2px' }} />
 
             {/* Record */}
-            <ControlBtn title="Record">
+            <ControlBtn title="Ghi hình">
               <span style={{ position: 'relative', display: 'flex' }}>
                 <Disc size={17} />
                 <span style={{
@@ -406,13 +406,13 @@ export default function MeetingRoomPage() {
             </ControlBtn>
 
             {/* Hand */}
-            <ControlBtn title="Raise hand"><Hand size={17} /></ControlBtn>
+            <ControlBtn title="Giơ tay"><Hand size={17} /></ControlBtn>
 
             {/* Share screen */}
-            <ControlBtn title="Share screen"><MonitorUp size={17} /></ControlBtn>
+            <ControlBtn title="Chia sẻ màn hình"><MonitorUp size={17} /></ControlBtn>
 
             {/* Participants */}
-            <ControlBtn title="Participants"><Users size={17} /></ControlBtn>
+            <ControlBtn title="Người tham gia"><Users size={17} /></ControlBtn>
 
             <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', margin: '0 2px' }} />
 
@@ -426,7 +426,7 @@ export default function MeetingRoomPage() {
               fontFamily: 'inherit',
             }}>
               <PhoneOff size={16} />
-              Leave
+              Rời phòng
             </button>
           </div>
 
@@ -440,7 +440,7 @@ export default function MeetingRoomPage() {
             cursor: 'pointer', fontFamily: 'inherit',
           }}>
             <LayoutGrid size={14} />
-            Layout
+            Bố cục
           </button>
         </footer>
       </div>
