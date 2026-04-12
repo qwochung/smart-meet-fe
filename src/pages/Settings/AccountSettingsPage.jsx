@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Button, Card, Input } from '../../components/common';
 
 const tabs = [
-  { id: 'profile', label: 'Profile' },
-  { id: 'password', label: 'Password' },
-  { id: 'notifications', label: 'Notifications' },
+  { id: 'profile', label: 'Hồ sơ' },
+  { id: 'password', label: 'Mật khẩu' },
+  { id: 'notifications', label: 'Thông báo' },
 ];
 
 export default function AccountSettingsPage() {
@@ -13,8 +13,8 @@ export default function AccountSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Account Settings</h1>
-        <p className="mt-1 text-sm text-slate-500">Manage your profile, password, and notification preferences.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Cài đặt tài khoản</h1>
+        <p className="mt-1 text-sm text-slate-500">Quản lý hồ sơ, mật khẩu và tùy chọn thông báo.</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
@@ -38,32 +38,32 @@ export default function AccountSettingsPage() {
         <Card>
           {activeTab === 'profile' && (
             <form className="grid gap-4 md:grid-cols-2">
-              <Input label="Full name" defaultValue="Nguyen Van A" />
+              <Input label="Họ và tên" defaultValue="Nguyen Van A" />
               <Input label="Email" defaultValue="nguyenvana@smartmeet.com" />
               <div className="md:col-span-2 flex justify-end">
-                <Button>Save profile</Button>
+                <Button>Lưu hồ sơ</Button>
               </div>
             </form>
           )}
 
           {activeTab === 'password' && (
             <form className="grid gap-4">
-              <Input label="Current password" type="password" />
-              <Input label="New password" type="password" />
-              <Input label="Confirm new password" type="password" />
+              <Input label="Mật khẩu hiện tại" type="password" />
+              <Input label="Mật khẩu mới" type="password" />
+              <Input label="Xác nhận mật khẩu mới" type="password" />
               <div className="flex justify-end">
-                <Button>Update password</Button>
+                <Button>Cập nhật mật khẩu</Button>
               </div>
             </form>
           )}
 
           {activeTab === 'notifications' && (
             <div className="space-y-3 text-sm text-slate-700">
-              <label className="flex items-center gap-2"><input type="checkbox" defaultChecked /> Email reminders before meeting</label>
-              <label className="flex items-center gap-2"><input type="checkbox" defaultChecked /> Weekly summary report</label>
-              <label className="flex items-center gap-2"><input type="checkbox" /> Product update newsletter</label>
+              <label className="flex items-center gap-2"><input type="checkbox" defaultChecked /> Nhắc lịch bằng email trước cuộc họp</label>
+              <label className="flex items-center gap-2"><input type="checkbox" defaultChecked /> Báo cáo tổng hợp hằng tuần</label>
+              <label className="flex items-center gap-2"><input type="checkbox" /> Bản tin cập nhật sản phẩm</label>
               <div className="pt-2">
-                <Button>Save preferences</Button>
+                <Button>Lưu tùy chọn</Button>
               </div>
             </div>
           )}

@@ -31,25 +31,25 @@ const RegisterPage = () => {
     const newErrors = {};
 
     if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
+      newErrors.fullName = 'Vui lòng nhập họ và tên';
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Vui lòng nhập email';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = 'Vui lòng nhập email hợp lệ';
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Vui lòng nhập mật khẩu';
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = 'Mật khẩu phải có ít nhất 8 ký tự';
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
     }
 
     setErrors(newErrors);
@@ -64,12 +64,12 @@ const RegisterPage = () => {
     }
 
     setLoading(true);
-    console.log('Register:', formData);
+    console.log('Đăng ký:', formData);
     setTimeout(() => setLoading(false), 1000);
   };
 
   const handleOAuthLogin = (provider) => {
-    console.log(`Register with ${provider}`);
+    console.log(`Đăng ký với ${provider}`);
   };
 
   return (
@@ -100,10 +100,10 @@ const RegisterPage = () => {
           {/* Main Content */}
           <div className="flex-1 flex flex-col justify-center max-w-lg">
             <h1 className="text-5xl font-bold text-white leading-tight">
-              Join the future of video meetings.
+              Gia nhập tương lai của họp video.
             </h1>
             <p className="mt-6 text-lg text-dark-300 leading-relaxed">
-              Experience seamless collaboration with crystal-clear audio and high-definition video for teams of any size.
+              Trải nghiệm hợp tác mượt mà với âm thanh rõ nét và video chất lượng cao cho mọi quy mô đội ngũ.
             </p>
           </div>
 
@@ -115,7 +115,7 @@ const RegisterPage = () => {
               <div className="w-10 h-10 rounded-full bg-[#F5F0E1] border-2 border-dark-900"></div>
             </div>
             <p className="ml-4 text-dark-300">
-              Joined by over <span className="text-white font-semibold">10,000+</span> teams worldwide
+              Đã có hơn <span className="text-white font-semibold">10,000+</span> đội ngũ trên toàn thế giới tham gia
             </p>
           </div>
         </div>
@@ -126,8 +126,8 @@ const RegisterPage = () => {
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-slate-900">Create an account</h2>
-            <p className="mt-2 text-slate-500">Start your 14-day free trial. No credit card required.</p>
+            <h2 className="text-3xl font-bold text-slate-900">Tạo tài khoản</h2>
+            <p className="mt-2 text-slate-500">Bắt đầu dùng thử 14 ngày. Không cần thẻ tín dụng.</p>
           </div>
 
           {/* OAuth Buttons */}
@@ -139,7 +139,7 @@ const RegisterPage = () => {
               className="border-slate-300 text-slate-700 hover:bg-slate-100"
             >
               <img src="/google.png" alt="Google" className="w-5 h-5 object-contain" />
-              <span className="ml-2">Continue with Google</span>
+              <span className="ml-2">Tiếp tục với Google</span>
             </Button>
 
             <div className="grid grid-cols-2 gap-3">
@@ -168,7 +168,7 @@ const RegisterPage = () => {
               <div className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-slate-500">or continue with email</span>
+              <span className="px-4 bg-white text-slate-500">hoặc tiếp tục bằng email</span>
             </div>
           </div>
 
@@ -176,10 +176,10 @@ const RegisterPage = () => {
           {/* Fix: bỏ prop helperText trùng lặp với error — Input.jsx dùng error để hiển thị message */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="Full name"
+              label="Họ và tên"
               type="text"
               name="fullName"
-              placeholder="Enter your full name"
+              placeholder="Nhập họ và tên"
               value={formData.fullName}
               onChange={handleInputChange}
               error={errors.fullName}
@@ -187,7 +187,7 @@ const RegisterPage = () => {
             />
 
             <Input
-              label="Email address"
+              label="Địa chỉ email"
               type="email"
               name="email"
               placeholder="smartmeet@gmail.com"
@@ -198,7 +198,7 @@ const RegisterPage = () => {
             />
 
             <Input
-              label="Password"
+              label="Mật khẩu"
               type="password"
               name="password"
               placeholder="••••••••"
@@ -210,7 +210,7 @@ const RegisterPage = () => {
             />
 
             <Input
-              label="Confirm password"
+              label="Xác nhận mật khẩu"
               type="password"
               name="confirmPassword"
               placeholder="••••••••"
@@ -228,23 +228,23 @@ const RegisterPage = () => {
               loading={loading}
               className="mt-6"
             >
-              Create account
+              Tạo tài khoản
             </Button>
           </form>
 
           {/* Sign In Link */}
           <p className="mt-6 text-center text-slate-500">
-            Already have an account?{' '}
+            Đã có tài khoản?{' '}
             <Link to="/auth/login" className="text-primary-500 hover:text-primary-400 font-medium transition-colors">
-              Sign in
+              Đăng nhập
             </Link>
           </p>
 
           {/* Footer */}
           <div className="mt-8 flex justify-center space-x-6 text-sm text-slate-500">
-            <a href="#" className="hover:text-slate-700 transition-colors">PRIVACY</a>
-            <a href="#" className="hover:text-slate-700 transition-colors">TERMS</a>
-            <a href="#" className="hover:text-slate-700 transition-colors">HELP</a>
+            <a href="#" className="hover:text-slate-700 transition-colors">BẢO MẬT</a>
+            <a href="#" className="hover:text-slate-700 transition-colors">ĐIỀU KHOẢN</a>
+            <a href="#" className="hover:text-slate-700 transition-colors">TRỢ GIÚP</a>
           </div>
         </div>
       </div>

@@ -4,26 +4,26 @@ import { Button, Header, SiteFooter } from '../../components/common';
 
 const plans = [
   {
-    name: 'Free',
+    name: 'Miễn phí',
     price: '$0',
-    period: '/month',
-    description: 'Perfect for individuals and small quick syncs.',
-    features: ['Up to 40 min meetings', '100 participants', 'Basic whiteboarding', 'Group & 1:1 chat'],
+    period: '/tháng',
+    description: 'Phù hợp cho cá nhân và các buổi họp nhanh nhỏ.',
+    features: ['Tối đa 40 phút/cuộc họp', '100 người tham gia', 'Bảng trắng cơ bản', 'Chat nhóm và 1:1'],
   },
   {
     name: 'Pro',
     price: '$15',
-    period: '/user/month',
-    description: 'Empower your growing team with advanced tools.',
-    features: ['Unlimited meeting duration', '300 participants', 'Cloud recording (5GB)', 'AI meeting summaries', 'Custom branding'],
+    period: '/người dùng/tháng',
+    description: 'Trao quyền cho đội ngũ đang phát triển với công cụ nâng cao.',
+    features: ['Thời lượng họp không giới hạn', '300 người tham gia', 'Ghi hình đám mây (5GB)', 'Tóm tắt cuộc họp bằng AI', 'Tùy biến thương hiệu'],
     highlighted: true,
   },
   {
-    name: 'Enterprise',
+    name: 'Doanh nghiệp',
     price: '$49',
-    period: '/user/month',
-    description: 'Security and control for large organizations.',
-    features: ['Unlimited participants', 'SSO/SAML', 'Dedicated CSM', 'Advanced analytics'],
+    period: '/người dùng/tháng',
+    description: 'Bảo mật và kiểm soát cho tổ chức quy mô lớn.',
+    features: ['Người tham gia không giới hạn', 'SSO/SAML', 'CSM riêng', 'Phân tích nâng cao'],
   },
 ];
 
@@ -32,10 +32,10 @@ export default function PricingPage() {
     <div className="min-h-screen bg-white text-slate-900">
       <Header variant="public" fixed />
       <section className="mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Pricing</p>
-        <h1 className="mt-4 text-5xl font-bold tracking-tight">Plans for every team size</h1>
+        <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Bảng giá</p>
+        <h1 className="mt-4 text-5xl font-bold tracking-tight">Gói phù hợp mọi quy mô đội ngũ</h1>
         <p className="mt-4 max-w-2xl text-slate-600">
-          Whether you are a solo creator or a global enterprise, choose the right plan for seamless collaboration.
+          Dù bạn là cá nhân hay doanh nghiệp toàn cầu, hãy chọn gói phù hợp để hợp tác mượt mà.
         </p>
       </section>
 
@@ -48,7 +48,7 @@ export default function PricingPage() {
             >
               {plan.highlighted && (
                 <span className="mb-3 inline-flex rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-700">
-                  Most Popular
+                  Phổ biến nhất
                 </span>
               )}
               <h2 className="text-xl font-semibold">{plan.name}</h2>
@@ -65,41 +65,41 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <Button className="mt-6 w-full">{plan.name === 'Enterprise' ? 'Contact Sales' : 'Get Started'}</Button>
+              <Button className="mt-6 w-full">{plan.name === 'Doanh nghiệp' ? 'Liên hệ kinh doanh' : 'Bắt đầu ngay'}</Button>
             </article>
           ))}
         </div>
 
         <div className="mt-10 rounded-2xl border border-slate-200 bg-slate-50 p-8">
-          <h3 className="text-2xl font-semibold">Compare detailed features</h3>
+          <h3 className="text-2xl font-semibold">So sánh tính năng chi tiết</h3>
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-600">
-                  <th className="px-3 py-2">Feature</th>
-                  <th className="px-3 py-2">Free</th>
+                  <th className="px-3 py-2">Tính năng</th>
+                  <th className="px-3 py-2">Miễn phí</th>
                   <th className="px-3 py-2">Pro</th>
-                  <th className="px-3 py-2">Enterprise</th>
+                  <th className="px-3 py-2">Doanh nghiệp</th>
                 </tr>
               </thead>
               <tbody className="text-slate-700">
-                <tr className="border-b border-slate-200"><td className="px-3 py-2">Meeting Duration</td><td className="px-3 py-2">40 mins</td><td className="px-3 py-2">Unlimited</td><td className="px-3 py-2">Unlimited</td></tr>
-                <tr className="border-b border-slate-200"><td className="px-3 py-2">Participants</td><td className="px-3 py-2">100</td><td className="px-3 py-2">300</td><td className="px-3 py-2">Unlimited</td></tr>
-                <tr><td className="px-3 py-2">AI Summaries</td><td className="px-3 py-2">-</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td></tr>
+                <tr className="border-b border-slate-200"><td className="px-3 py-2">Thời lượng cuộc họp</td><td className="px-3 py-2">40 phút</td><td className="px-3 py-2">Không giới hạn</td><td className="px-3 py-2">Không giới hạn</td></tr>
+                <tr className="border-b border-slate-200"><td className="px-3 py-2">Người tham gia</td><td className="px-3 py-2">100</td><td className="px-3 py-2">300</td><td className="px-3 py-2">Không giới hạn</td></tr>
+                <tr><td className="px-3 py-2">Tóm tắt AI</td><td className="px-3 py-2">-</td><td className="px-3 py-2">Có</td><td className="px-3 py-2">Có</td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
         <div className="mt-10 rounded-2xl border border-slate-200 bg-slate-50 p-8">
-          <h3 className="text-2xl font-semibold">Frequently Asked Questions</h3>
+          <h3 className="text-2xl font-semibold">Câu hỏi thường gặp</h3>
           <div className="mt-4 space-y-4 text-sm text-slate-600">
-            <div><p className="font-semibold text-slate-900">Can I switch plans later?</p><p>Yes. You can upgrade or downgrade at any time from account settings.</p></div>
-            <div><p className="font-semibold text-slate-900">Do you offer discounts for education?</p><p>Yes, special pricing is available for schools and non-profits.</p></div>
-            <div><p className="font-semibold text-slate-900">What security measures do you provide?</p><p>AES-256 encryption, role-based controls, and SSO on enterprise tier.</p></div>
+            <div><p className="font-semibold text-slate-900">Tôi có thể đổi gói sau này không?</p><p>Có. Bạn có thể nâng cấp hoặc hạ cấp bất kỳ lúc nào trong cài đặt tài khoản.</p></div>
+            <div><p className="font-semibold text-slate-900">Có ưu đãi cho giáo dục không?</p><p>Có, giá đặc biệt áp dụng cho trường học và tổ chức phi lợi nhuận.</p></div>
+            <div><p className="font-semibold text-slate-900">Nền tảng có những biện pháp bảo mật nào?</p><p>Mã hóa AES-256, kiểm soát theo vai trò và SSO cho gói doanh nghiệp.</p></div>
           </div>
           <Link to="/resources" className="mt-5 inline-block">
-            <Button variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-100">Read Documentation</Button>
+            <Button variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-100">Đọc tài liệu</Button>
           </Link>
         </div>
       </section>
