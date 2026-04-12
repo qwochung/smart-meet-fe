@@ -5,22 +5,29 @@ import {useEffect, useRef, useState} from "react";
 
 export default function WaitingScreen() {
   const videoRef = useRef(null);
-  const [stream, setStream] = useState(null);
+  const streamRef = useRef(null);
   const [isCamOn, setIsCamOn] = useState(true);
 
   useEffect(() => {
-    const openCamera = async () => {
-      try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: true,
-        });
+    let cancelled = false;
 
-        setStream(mediaStream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
+    const openCamera = async () => {
+      streamRef.current?.getTracks().forEach(track => {
+        track.stop()
+      });
+
+      try {
+        const localStream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+        if (cancelled){
+          localStream.getTracks().forEach(track => track.stop());
+          return;
         }
-      } catch (err){
+        streamRef.current = localStream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = localStream;
+        }
+      } catch (err) {
         console.log("Lỗi truy cập camera:", err)
       }
     };
@@ -28,28 +35,27 @@ export default function WaitingScreen() {
     openCamera();
 
     return () => {
-      if(stream) {
-        stream.getTracks().forEach(track => {
-          track.stop();
+      streamRef.current?.getTracks()
+        .forEach((track) => {
+          track.stop()
         })
-      }
     }
 
   }, [])
 
   const toggleCamera = async () => {
     if(isCamOn) {
-      stream.getTracks().forEach(track => {
-        track.stop();
-        setIsCamOn(false);
-      })
+      streamRef.current?.getTracks().forEach(track => track.stop()); // stop tất cả tracks
+      if (videoRef.current) videoRef.current.srcObject = null;
+      streamRef.current = null;
+      setIsCamOn(false);
+
     } else {
       try{
         const newStream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
           video: true,
         })
-        setStream(newStream);
+        streamRef.current = newStream;
         if (videoRef.current) {
           videoRef.current.srcObject = newStream;
         }
