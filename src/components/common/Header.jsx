@@ -82,7 +82,7 @@ const NavLinks = ({ links, isMobile = false, onLinkClick, textClass = 'text-dark
   );
 };
 
-const SearchInput = ({ placeholder = 'Search meetings...', value, onChange, inputClassName }) => (
+const SearchInput = ({ placeholder = 'Tìm kiếm cuộc họp...', value, onChange, inputClassName }) => (
   <div className="relative hidden md:block">
     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
     <input
@@ -100,7 +100,7 @@ const MobileMenuButton = ({ isOpen, onClick, colorClass }) => (
     onClick={onClick}
     type="button"
     className={`md:hidden p-2 transition-colors ${colorClass}`}
-    aria-label="Toggle menu"
+    aria-label="Bật/tắt menu"
   >
     {isOpen ? <CircleX /> : <Menu />}
   </button>
@@ -108,10 +108,10 @@ const MobileMenuButton = ({ isOpen, onClick, colorClass }) => (
 
 const PublicHeader = ({ onSignIn, onSignUp, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const publicNavLinks = [
-    { label: 'Features', href: '/features' },
-    { label: 'Solutions', href: '/solutions' },
-    { label: 'Pricing', href: '/pricing' },
-    { label: 'Resources', href: '/resources' },
+    { label: 'Tính năng', href: '/features' },
+    { label: 'Giải pháp', href: '/solutions' },
+    { label: 'Bảng giá', href: '/pricing' },
+    { label: 'Tài nguyên', href: '/resources' },
   ];
 
   return (
@@ -127,11 +127,11 @@ const PublicHeader = ({ onSignIn, onSignUp, isMobileMenuOpen, setIsMobileMenuOpe
             onClick={onSignIn}
             className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors duration-200"
           >
-            Sign In
+            Đăng nhập
           </Link>
           <Link to="/auth/register" onClick={onSignUp}>
             <Button variant="primary" size="md" className="rounded-lg px-5">
-              Sign Up Free
+              Đăng ký miễn phí
             </Button>
           </Link>
         </div>
@@ -160,7 +160,7 @@ const PublicHeader = ({ onSignIn, onSignUp, isMobileMenuOpen, setIsMobileMenuOpe
               }}
               className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors duration-200"
             >
-              Sign In
+              Đăng nhập
             </Link>
             <Link
               to="/auth/register"
@@ -170,7 +170,7 @@ const PublicHeader = ({ onSignIn, onSignUp, isMobileMenuOpen, setIsMobileMenuOpe
               }}
             >
               <Button variant="primary" size="md" className="rounded-lg w-full">
-                Sign Up Free
+                Đăng ký miễn phí
               </Button>
             </Link>
           </div>
@@ -182,10 +182,10 @@ const PublicHeader = ({ onSignIn, onSignUp, isMobileMenuOpen, setIsMobileMenuOpe
 
 const AppHeader = ({ user, searchValue, onSearchChange, onNotificationClick, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const appNavLinks = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Meeting Minutes', href: '/minutes' },
-    { label: 'Meeting Management', href: '/meetings' },
-    { label: 'Account Settings', href: '/settings' },
+    { label: 'Tổng quan', href: '/dashboard' },
+    { label: 'Biên bản họp', href: '/minutes' },
+    { label: 'Quản lý cuộc họp', href: '/meetings' },
+    { label: 'Cài đặt tài khoản', href: '/settings' },
   ];
 
   return (
@@ -197,7 +197,7 @@ const AppHeader = ({ user, searchValue, onSearchChange, onNotificationClick, isM
 
         <div className="hidden md:flex items-center gap-2">
           <SearchInput value={searchValue} onChange={onSearchChange} />
-          <IconButton icon={Bell} onClick={onNotificationClick} badge ariaLabel="Notifications" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
+          <IconButton icon={Bell} onClick={onNotificationClick} badge ariaLabel="Thông báo" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
           <UserAvatar user={user} />
         </div>
 
@@ -215,7 +215,7 @@ const AppHeader = ({ user, searchValue, onSearchChange, onNotificationClick, isM
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search meetings..."
+                placeholder="Tìm kiếm cuộc họp..."
                 value={searchValue}
                 onChange={onSearchChange}
                 className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none"
@@ -224,7 +224,7 @@ const AppHeader = ({ user, searchValue, onSearchChange, onNotificationClick, isM
           </div>
           <NavLinks links={appNavLinks} isMobile onLinkClick={() => setIsMobileMenuOpen(false)} />
           <div className="flex items-center gap-4 pt-4 mt-4 border-t border-slate-200">
-            <IconButton icon={Bell} onClick={onNotificationClick} ariaLabel="Notifications" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
+            <IconButton icon={Bell} onClick={onNotificationClick} ariaLabel="Thông báo" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
             <UserAvatar user={user} />
           </div>
         </div>
@@ -240,8 +240,8 @@ const MeetingHeader = ({ user, meetingTitle, onSettingsClick, onHelpClick }) => 
     {meetingTitle && <div className="hidden md:block text-slate-700 text-sm font-medium">{meetingTitle}</div>}
 
     <div className="flex items-center gap-1">
-      <IconButton icon={Settings} onClick={onSettingsClick} ariaLabel="Settings" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
-      <IconButton icon={MessageCircleQuestionMark} onClick={onHelpClick} ariaLabel="Help" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
+      <IconButton icon={Settings} onClick={onSettingsClick} ariaLabel="Cài đặt" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
+      <IconButton icon={MessageCircleQuestionMark} onClick={onHelpClick} ariaLabel="Trợ giúp" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" />
       <UserAvatar user={user} size="sm" />
     </div>
   </div>

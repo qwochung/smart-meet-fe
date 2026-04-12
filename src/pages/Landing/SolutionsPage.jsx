@@ -5,110 +5,110 @@ import { Button, Header, SiteFooter } from '../../components/common';
 const industrySolutions = [
   {
     id: 'education',
-    title: 'Education',
-    description: 'Empower students and educators with interactive virtual classrooms, secure testing environments, and deep LMS integration.',
+    title: 'Giáo dục',
+    description: 'Trao quyền cho học sinh và giảng viên với lớp học ảo tương tác, môi trường thi an toàn và tích hợp LMS sâu.',
     icon: GraduationCap,
     cards: [
       {
-        title: 'Virtual Classrooms',
-        description: 'Engage students with breakout rooms, real-time polls, and interactive whiteboards.',
+        title: 'Lớp học trực tuyến',
+        description: 'Tăng tương tác với phòng thảo luận, khảo sát thời gian thực và bảng trắng.',
         image:
           'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80',
-        imageAlt: 'Teacher hosting an online class with students',
+        imageAlt: 'Giảng viên đang dạy lớp trực tuyến với học sinh',
       },
       {
-        title: 'LMS Integration',
-        description: 'Seamlessly sync attendance and grades with Canvas, Moodle, and Blackboard.',
+        title: 'Tích hợp LMS',
+        description: 'Đồng bộ điểm danh và điểm số với Canvas, Moodle và Blackboard.',
         image:
           'https://images.unsplash.com/photo-1588702547919-26089e690ecc?auto=format&fit=crop&w=1200&q=80',
-        imageAlt: 'Learning management dashboard on a monitor',
+        imageAlt: 'Bảng điều khiển hệ thống học tập trên màn hình',
       },
     ],
     quote: {
-      text: 'Nexus Meet transformed our distance learning program, increasing student engagement by 40%.',
+      text: 'Smart Meet đã thay đổi chương trình học từ xa của chúng tôi, tăng 40% mức độ tương tác của học sinh.',
       author: 'Dr. Sarah Chen',
-      role: 'Dean, Global University',
+      role: 'Trưởng khoa, Đại học Global',
     },
   },
   {
     id: 'enterprise',
-    title: 'Enterprise',
-    description: 'Scale your global communications with bank-grade security, administrative controls, and guaranteed 99.99% uptime.',
+    title: 'Doanh nghiệp',
+    description: 'Mở rộng giao tiếp toàn cầu với bảo mật cấp ngân hàng, kiểm soát quản trị và SLA 99.99%.',
     icon: Building2,
     cards: [
       {
-        title: 'End-to-End Encryption',
-        description: 'AES-256 encryption ensures that your high-level executive meetings remain confidential.',
+        title: 'Mã hóa đầu-cuối',
+        description: 'Mã hóa AES-256 đảm bảo các cuộc họp quan trọng luôn bảo mật.',
         image:
           'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
-        imageAlt: 'Secure enterprise communication dashboard',
+        imageAlt: 'Bảng điều khiển giao tiếp doanh nghiệp an toàn',
       },
       {
-        title: 'Usage Analytics',
-        description: 'Centralized dashboards for QoS monitoring, license management, and adoption metrics.',
+        title: 'Phân tích sử dụng',
+        description: 'Bảng điều khiển tập trung cho chất lượng dịch vụ, quản lý license và mức độ áp dụng.',
         image:
           'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
-        imageAlt: 'Analytics charts on laptop screen',
+        imageAlt: 'Biểu đồ phân tích trên màn hình laptop',
       },
     ],
     quote: {
-      text: 'The most reliable platform we have used for over 20,000+ employee calls each month.',
+      text: 'Đây là nền tảng ổn định nhất mà chúng tôi dùng cho hơn 20,000 cuộc gọi nhân viên mỗi tháng.',
       author: 'Marcus Thorne',
       role: 'CTO, Vertex Global',
     },
   },
   {
     id: 'healthcare',
-    title: 'Healthcare',
-    description: 'HIPAA-compliant telehealth solutions that prioritize patient privacy and physician ease-of-use.',
+    title: 'Y tế',
+    description: 'Giải pháp khám bệnh từ xa đạt chuẩn HIPAA, ưu tiên quyền riêng tư của bệnh nhân và sự dễ dùng cho bác sĩ.',
     icon: HeartPulse,
     cards: [
       {
-        title: 'Telehealth Appointments',
-        description: 'High-definition video for accurate remote diagnosis and patient follow-ups.',
+        title: 'Lịch khám trực tuyến',
+        description: 'Video độ phân giải cao để chẩn đoán từ xa chính xác và tái khám hiệu quả.',
         image:
           'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80',
-        imageAlt: 'Doctor in telehealth consultation with patient',
+        imageAlt: 'Bác sĩ đang tư vấn khám bệnh trực tuyến với bệnh nhân',
       },
       {
-        title: 'EHR Integration',
-        description: 'Direct connection with Epic and Cerner for streamlined medical record updates.',
+        title: 'Tích hợp EHR',
+        description: 'Kết nối trực tiếp với Epic và Cerner để cập nhật hồ sơ y tế nhanh gọn.',
         image:
           'https://images.unsplash.com/photo-1584982751601-97dcc096659c?auto=format&fit=crop&w=1200&q=80',
-        imageAlt: 'Doctor using electronic health record system',
+        imageAlt: 'Bác sĩ sử dụng hệ thống hồ sơ sức khỏe điện tử',
       },
     ],
     quote: {
-      text: 'Patient trust is our top priority. Nexus Meet gives us the security and quality we need.',
+      text: 'Niềm tin của bệnh nhân là ưu tiên hàng đầu. Smart Meet mang đến độ bảo mật và chất lượng chúng tôi cần.',
       author: 'Dr. Elena Rodriguez',
-      role: 'Chief Medical Officer, HealthPoint',
+      role: 'Giám đốc y khoa, HealthPoint',
     },
   },
   {
     id: 'remote',
-    title: 'Remote Teams',
-    description: 'Foster a culture of collaboration across time zones with tools designed for asynchronous and real-time teamwork.',
+    title: 'Nhóm làm việc từ xa',
+    description: 'Xây dựng văn hóa hợp tác xuyên múi giờ với công cụ cho cả làm việc đồng bộ và bất đồng bộ.',
     icon: UsersRound,
     cards: [
       {
-        title: 'Always-On Huddles',
-        description: 'Virtual office spaces where team members can hop in and out for quick syncs.',
+        title: 'Phòng họp nhanh luôn mở',
+        description: 'Không gian văn phòng ảo để thành viên ra vào linh hoạt cho các buổi đồng bộ nhanh.',
         image:
           'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1200&q=80',
-        imageAlt: 'Remote team workspace with laptop and desk setup',
+        imageAlt: 'Góc làm việc của nhóm từ xa với laptop và bàn làm việc',
       },
       {
-        title: 'Collaborative Notes',
-        description: 'Shared meeting agendas and notes that sync instantly to Slack and Notion.',
+        title: 'Ghi chú cộng tác',
+        description: 'Chương trình họp và ghi chú được đồng bộ tức thì sang Slack và Notion.',
         image:
           'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?auto=format&fit=crop&w=1200&q=80',
-        imageAlt: 'Sticky notes for collaborative planning',
+        imageAlt: 'Giấy ghi chú cho lập kế hoạch cộng tác',
       },
     ],
     quote: {
-      text: 'It finally feels like we are in the same room, even though we are spread across 12 countries.',
+      text: 'Cuối cùng chúng tôi cảm thấy như đang ngồi chung một phòng, dù đang ở 12 quốc gia khác nhau.',
       author: 'James Wilson',
-      role: 'Head of People, Nomad Creative',
+      role: 'Trưởng bộ phận nhân sự, Nomad Creative',
     },
   },
 ];
@@ -121,32 +121,32 @@ const SolutionsPage = () => {
         <div className="grid items-center gap-8 lg:grid-cols-[1fr_1fr]">
           <div>
             <h1 className="max-w-xl text-5xl font-bold tracking-tight">
-              Tailored video solutions for every industry
+              Giải pháp video may đo riêng cho từng lĩnh vực
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600">
-              Discover how Smart Meet powers seamless collaboration across education, healthcare, and global enterprise.
+              Khám phá cách Smart Meet giúp hợp tác mượt mà trong giáo dục, y tế và doanh nghiệp toàn cầu.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button size="lg">Book a Demo</Button>
+              <Button size="lg">Đặt lịch demo</Button>
               <Link
                 to="/pricing"
                 className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
-                View Pricing
+                Xem bảng giá
               </Link>
             </div>
           </div>
 
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-2">
-            <img src="/landing.jpg" alt="Professional video collaboration" className="h-[300px] w-full rounded-lg object-cover object-center" />
+            <img src="/landing.jpg" alt="Nền tảng hợp tác video chuyên nghiệp" className="h-[300px] w-full rounded-lg object-cover object-center" />
           </div>
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-primary-600">Industry solutions</p>
+        <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-primary-600">Giải pháp theo ngành</p>
         <h2 className="mx-auto mt-4 max-w-4xl text-center text-4xl font-bold leading-tight">
-          Empowering your team with specialized tools
+          Trao sức mạnh cho đội ngũ bằng bộ công cụ chuyên biệt
         </h2>
 
         <div className="mt-14 space-y-14 lg:space-y-16">
@@ -205,17 +205,17 @@ const SolutionsPage = () => {
       <section className="pb-16 pt-4">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-14 text-center sm:px-12">
-            <h2 className="text-4xl font-bold leading-tight">Ready to transform your organization?</h2>
+            <h2 className="text-4xl font-bold leading-tight">Sẵn sàng chuyển đổi tổ chức của bạn?</h2>
             <p className="mx-auto mt-4 max-w-2xl text-slate-600">
-              Join over 50,000 companies that trust Nexus Meet for their mission-critical communications.
+              Gia nhập hơn 50,000 công ty đang tin dùng Smart Meet cho liên lạc quan trọng.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button size="lg" className="min-w-44 rounded-lg">
-                Start Free Trial
+                Dùng thử miễn phí
               </Button>
               <Button size="lg" variant="outline" className="min-w-44 rounded-lg border-slate-300 text-slate-700 hover:bg-slate-100">
-                Contact Sales
+                Liên hệ kinh doanh
               </Button>
             </div>
           </div>

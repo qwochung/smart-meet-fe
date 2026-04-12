@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export default function WaitingScreen() {
   const videoRef = useRef(null);
-  const [stream, setStream] = useState(null);
+  const streamRef = useRef(null);
   const [isCamOn, setIsCamOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
 
@@ -16,51 +16,68 @@ export default function WaitingScreen() {
           video: true,
         });
 
-        setStream(mediaStream);
-        if (videoRef.current) videoRef.current.srcObject = mediaStream;
+        streamRef.current = mediaStream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
       } catch (err) {
-        console.error('Loi truy cap camera:', err);
+        console.error('Lỗi truy cập camera:', err);
       }
     };
 
     openCamera();
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => {
-          track.stop();
-        });
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
     };
-  }, [stream]);
+  }, []);
 
   const toggleCamera = async () => {
-    if (!stream) return;
+    if (!streamRef.current) return;
+
     if (isCamOn) {
-      stream.getVideoTracks().forEach((track) => {
-        track.enabled = false;
-      });
+      const videoTracks = streamRef.current.getVideoTracks();
+      videoTracks.forEach((track) => track.stop());
+      videoTracks.forEach((track) => streamRef.current.removeTrack(track));
+      if (videoRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+      }
       setIsCamOn(false);
     } else {
       try {
         const newStream = await navigator.mediaDevices.getUserMedia({
-          audio: isMicOn,
+          audio: false,
           video: true,
         });
-        setStream(newStream);
+
+        const newVideoTrack = newStream.getVideoTracks()[0];
+
+        if (newVideoTrack) {
+          streamRef.current.addTrack(newVideoTrack);
+        }
+
+        newStream.getTracks().forEach((track) => {
+          if (track !== newVideoTrack) {
+            track.stop();
+          }
+        });
+
         if (videoRef.current) {
-          videoRef.current.srcObject = newStream;
+          videoRef.current.srcObject = streamRef.current;
         }
         setIsCamOn(true);
       } catch (err) {
-        console.error('Khong the mo camera:', err);
+        console.error('Không thể mở camera:', err);
       }
     }
   };
 
   const toggleMic = () => {
-    if (!stream) return;
-    stream.getAudioTracks().forEach((track) => {
+    if (!streamRef.current) return;
+    streamRef.current.getAudioTracks().forEach((track) => {
       track.enabled = !isMicOn;
     });
     setIsMicOn((prev) => !prev);
@@ -78,15 +95,15 @@ export default function WaitingScreen() {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary-600">Pre-join check</p>
-              <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-slate-900">Ready to join?</h1>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary-600">Kiểm tra trước khi vào họp</p>
+              <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-slate-900">Sẵn sàng tham gia?</h1>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
-                Check your audio, camera, and device setup before entering the call.
+                Kiểm tra âm thanh, camera và thiết bị trước khi vào cuộc gọi.
               </p>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              Meeting code: <span className="font-semibold text-slate-900">smart.meet/prod-sync</span>
+              Mã cuộc họp: <span className="font-semibold text-slate-900">smart.meet/prod-sync</span>
             </div>
           </div>
 
@@ -95,9 +112,9 @@ export default function WaitingScreen() {
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 text-sm text-slate-300">
                 <span className="inline-flex items-center gap-2 font-medium text-white">
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                  Camera preview
+                  Xem trước camera
                 </span>
-                <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium">Live devices connected</span>
+                <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium">Thiết bị đang kết nối</span>
               </div>
 
               <div className="h-[460px] bg-slate-900">
@@ -107,7 +124,7 @@ export default function WaitingScreen() {
                   <div className="grid h-full place-items-center text-slate-400">
                     <div className="text-center">
                       <VideoOff className="mx-auto h-10 w-10" />
-                      <p className="mt-3 text-sm">Camera is currently off</p>
+                      <p className="mt-3 text-sm">Camera hiện đang tắt</p>
                     </div>
                   </div>
                 )}
@@ -122,7 +139,7 @@ export default function WaitingScreen() {
                 <span className="mb-2 grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/5 transition-colors group-hover:bg-white/10">
                   {isMicOn ? <Mic className="h-5 w-5 text-white" /> : <MicOff className="h-5 w-5 text-rose-300" />}
                 </span>
-                {isMicOn ? 'Mic on' : 'Mic off'}
+                {isMicOn ? 'Mic bật' : 'Mic tắt'}
               </button>
 
               <button
@@ -133,7 +150,7 @@ export default function WaitingScreen() {
                 <span className="mb-2 grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/5 transition-colors group-hover:bg-white/10">
                   {isCamOn ? <Video className="h-5 w-5 text-white" /> : <VideoOff className="h-5 w-5 text-rose-300" />}
                 </span>
-                {isCamOn ? 'Camera on' : 'Camera off'}
+                {isCamOn ? 'Camera bật' : 'Camera tắt'}
               </button>
               </div>
             </section>
@@ -142,11 +159,11 @@ export default function WaitingScreen() {
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <p className="flex items-center gap-2 text-sm font-bold tracking-wide text-primary-600">
                   <Calendar className="h-4 w-4" />
-                  MEETING DETAILS
+                  CHI TIẾT CUỘC HỌP
                 </p>
 
                 <h2 className="mt-4 text-3xl font-extrabold leading-tight text-slate-900">
-                  Weekly Sync: Product Roadmap & Sprint Planning
+                  Đồng bộ hằng tuần: Lộ trình sản phẩm & kế hoạch Sprint
                 </h2>
 
                 <div className="mt-5 flex flex-wrap gap-4 text-sm text-slate-600">
@@ -164,7 +181,7 @@ export default function WaitingScreen() {
 
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <UsersRound className="h-4 w-4" />
-                  John, Sarah, and 3 others are already here
+                  John, Sarah và 3 người khác đã vào phòng
                 </div>
 
                 <div className="mt-4 flex items-center">
@@ -184,9 +201,9 @@ export default function WaitingScreen() {
 
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-medium text-slate-600">Device settings</span>
+                  <span className="text-sm font-medium text-slate-600">Cài đặt thiết bị</span>
                   <button type="button" className="text-sm font-medium text-primary-600 hover:text-primary-700">
-                    Change
+                    Thay đổi
                   </button>
                 </div>
 
@@ -207,11 +224,11 @@ export default function WaitingScreen() {
               </div>
 
               <Button className="h-12 w-full text-base font-bold" icon={ArrowRight} iconPosition="right">
-                Join now
+                Tham gia ngay
               </Button>
 
               <button type="button" className="w-full text-center text-sm text-slate-600 hover:text-primary-600">
-                Join with audio only
+                Chỉ tham gia bằng âm thanh
               </button>
             </aside>
           </div>

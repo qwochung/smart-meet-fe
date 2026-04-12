@@ -22,12 +22,12 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    console.log('Login:', formData);
+    console.log('Đăng nhập:', formData);
     setTimeout(() => setLoading(false), 1000);
   };
 
   const handleOAuthLogin = (provider) => {
-    console.log(`Login with ${provider}`);
+    console.log(`Đăng nhập với ${provider}`);
   };
 
   return (
@@ -63,7 +63,7 @@ const LoginPage = () => {
               Create.
             </h1>
             <p className="mt-6 text-lg text-dark-300 leading-relaxed">
-              Experience the future of professional video meetings. Real-time collaboration tools designed for modern teams.
+              Trải nghiệm tương lai của cuộc họp video chuyên nghiệp. Bộ công cụ cộng tác thời gian thực cho đội ngũ hiện đại.
             </p>
           </div>
 
@@ -74,8 +74,8 @@ const LoginPage = () => {
                 <Video className="w-5 h-5 text-primary-500" />
               </div>
               <div>
-                <div className="font-semibold text-white">HD Video</div>
-                <div className="text-sm text-dark-400">Crystal clear 4K calling</div>
+                <div className="font-semibold text-white">Video HD</div>
+                <div className="text-sm text-dark-400">Cuộc gọi 4K sắc nét</div>
               </div>
             </div>
             <div className="flex items-center space-x-3 bg-dark-800/80 backdrop-blur-sm rounded-xl px-5 py-4">
@@ -83,8 +83,8 @@ const LoginPage = () => {
                 <Shield className="w-5 h-5 text-primary-500" />
               </div>
               <div>
-                <div className="font-semibold text-white">Secure</div>
-                <div className="text-sm text-dark-400">End-to-end encryption</div>
+                <div className="font-semibold text-white">Bảo mật</div>
+                <div className="text-sm text-dark-400">Mã hóa đầu-cuối</div>
               </div>
             </div>
           </div>
@@ -96,8 +96,8 @@ const LoginPage = () => {
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-slate-900">Welcome back</h2>
-            <p className="mt-2 text-slate-500">Please enter your details to sign in to your account.</p>
+            <h2 className="text-3xl font-bold text-slate-900">Chào mừng bạn trở lại</h2>
+            <p className="mt-2 text-slate-500">Vui lòng nhập thông tin để đăng nhập tài khoản.</p>
           </div>
 
           {/* OAuth Buttons */}
@@ -109,7 +109,7 @@ const LoginPage = () => {
               className="border-slate-300 text-slate-700 hover:bg-slate-100"
             >
               <img src="/google.png" alt="Google" className="w-5 h-5 object-contain" />
-              <span className="ml-2">Continue with Google</span>
+              <span className="ml-2">Tiếp tục với Google</span>
             </Button>
 
             <div className="grid grid-cols-2 gap-3">
@@ -138,14 +138,14 @@ const LoginPage = () => {
               <div className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-slate-500">or continue with email</span>
+              <span className="px-4 bg-white text-slate-500">hoặc tiếp tục bằng email</span>
             </div>
           </div>
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="Email address"
+              label="Địa chỉ email"
               type="email"
               name="email"
               placeholder="smartmeet@gmail.com"
@@ -157,13 +157,13 @@ const LoginPage = () => {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-sm font-medium text-slate-700">
-                  Password
+                  Mật khẩu
                 </label>
                 <Link
                   to="/auth/forgot-password"
                   className="text-sm text-primary-500 hover:text-primary-400 transition-colors"
                 >
-                  Forgot password?
+                  Quên mật khẩu?
                 </Link>
               </div>
               <Input
@@ -179,7 +179,7 @@ const LoginPage = () => {
 
             <Checkbox
               name="rememberMe"
-              label="Remember me for 30 days"
+              label="Ghi nhớ đăng nhập trong 30 ngày"
               checked={formData.rememberMe}
               onChange={handleInputChange}
             />
@@ -191,23 +191,23 @@ const LoginPage = () => {
               loading={loading}
               className="mt-6"
             >
-              Sign in
+              Đăng nhập
             </Button>
           </form>
 
           {/* Sign Up Link */}
           <p className="mt-6 text-center text-slate-500">
-            Not a member?{' '}
+            Chưa có tài khoản?{' '}
             <Link to="/auth/register" className="text-primary-500 hover:text-primary-400 font-medium transition-colors">
-              Start a 14-day free trial
+              Bắt đầu dùng thử 14 ngày
             </Link>
           </p>
 
           {/* Footer */}
           <div className="mt-8 flex justify-center space-x-6 text-sm text-slate-500">
-            <a href="#" className="hover:text-slate-700 transition-colors">PRIVACY</a>
-            <a href="#" className="hover:text-slate-700 transition-colors">TERMS</a>
-            <a href="#" className="hover:text-slate-700 transition-colors">HELP</a>
+            <a href="#" className="hover:text-slate-700 transition-colors">BẢO MẬT</a>
+            <a href="#" className="hover:text-slate-700 transition-colors">ĐIỀU KHOẢN</a>
+            <a href="#" className="hover:text-slate-700 transition-colors">TRỢ GIÚP</a>
           </div>
         </div>
       </div>
