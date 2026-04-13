@@ -17,79 +17,129 @@ import {
 
 export default function JoinMeetingPage() {
   const navigate = useNavigate();
-  const videoRef = useRef(null); // ← không dùng generic TS
-  const streamRef = useRef(null); // ← không dùng generic TS
+  const videoRef = useRef(null);
+  const videoStreamRef = useRef(null);
+  const audioStreamRef = useRef(null);
+  const cameraWantedRef = useRef(true);
+  const micWantedRef = useRef(true);
   const [isCamOn, setIsCamOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
+  const [isMediaLoading, setIsMediaLoading] = useState(false);
+
+  const stopStream = (stream) => {
+    stream?.getTracks().forEach((track) => track.stop());
+  };
 
   useEffect(() => {
-    const openCamera = async () => {
+    let cancelled = false;
+
+    const openMedia = async () => {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: true,
-        });
-        streamRef.current = mediaStream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
+        // Mở 2 stream độc lập ngay từ đầu
+        const [videoStream, audioStream] = await Promise.all([
+          navigator.mediaDevices.getUserMedia({ video: true }),
+          navigator.mediaDevices.getUserMedia({ audio: true }),
+        ]);
+
+        if (cancelled) {
+          stopStream(videoStream);
+          stopStream(audioStream);
+          return;
+        }
+
+        if (cameraWantedRef.current) {
+          videoStreamRef.current = videoStream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = videoStream;
+          }
+        } else {
+          stopStream(videoStream);
+        }
+
+        if (micWantedRef.current) {
+          audioStreamRef.current = audioStream;
+        } else {
+          stopStream(audioStream);
         }
       } catch (err) {
-        console.error("Lỗi truy cập camera:", err);
+        console.error("Lỗi truy cập media:", err);
       }
     };
 
-    openCamera();
+    openMedia();
 
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-      }
+      cancelled = true;
+      stopStream(videoStreamRef.current);
+      stopStream(audioStreamRef.current);
+      videoStreamRef.current = null;
+      audioStreamRef.current = null;
     };
   }, []);
 
   const toggleCamera = async () => {
-    if (!streamRef.current) return;
-
-    if (isCamOn) {
-      // Dừng hẳn video track → đèn camera tắt
-      streamRef.current.getVideoTracks().forEach((track) => track.stop());
-      setIsCamOn(false);
-    } else {
-      // Xin lại quyền camera, lấy video track mới
-      try {
-        const newVideoStream = await navigator.mediaDevices.getUserMedia({
+    if (isMediaLoading) return;
+    setIsMediaLoading(true);
+    try {
+      if (isCamOn) {
+        cameraWantedRef.current = false;
+        stopStream(videoStreamRef.current);
+        videoStreamRef.current = null;
+        if (videoRef.current) videoRef.current.srcObject = null;
+        setIsCamOn(false);
+      } else {
+        cameraWantedRef.current = true;
+        const newStream = await navigator.mediaDevices.getUserMedia({
           video: true,
         });
-        const newVideoTrack = newVideoStream.getVideoTracks()[0];
 
-        // Thay thế track cũ (đã stop) trong stream hiện tại
-        streamRef.current
-          .getVideoTracks()
-          .forEach((t) => streamRef.current.removeTrack(t));
-        streamRef.current.addTrack(newVideoTrack);
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = streamRef.current;
+        if (!cameraWantedRef.current) {
+          stopStream(newStream);
+          return;
         }
+
+        videoStreamRef.current = newStream;
+        if (videoRef.current) videoRef.current.srcObject = newStream;
         setIsCamOn(true);
-      } catch (err) {
-        console.error("Không thể bật lại camera:", err);
       }
+    } catch (err) {
+      console.error("Không thể toggle camera:", err);
+    } finally {
+      setIsMediaLoading(false);
     }
   };
 
-  const toggleMic = () => {
-    if (!streamRef.current) return;
-    streamRef.current.getAudioTracks().forEach((track) => {
-      track.enabled = !isMicOn;
-    });
-    setIsMicOn((prev) => !prev);
+  const toggleMic = async () => {
+    if (isMediaLoading) return;
+    setIsMediaLoading(true);
+    try {
+      if (isMicOn) {
+        micWantedRef.current = false;
+        stopStream(audioStreamRef.current);
+        audioStreamRef.current = null;
+        setIsMicOn(false);
+      } else {
+        micWantedRef.current = true;
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+
+        if (!micWantedRef.current) {
+          stopStream(newStream);
+          return;
+        }
+
+        audioStreamRef.current = newStream;
+        setIsMicOn(true);
+      }
+    } catch (err) {
+      console.error("Không thể toggle mic:", err);
+    } finally {
+      setIsMediaLoading(false);
+    }
   };
 
-  const handleJoin = () => {
-    navigate("/room/prod-sync");
-  };
+  const handleJoin = () => navigate("/room/prod-sync");
 
   const people = [
     "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80",
@@ -129,7 +179,7 @@ export default function JoinMeetingPage() {
 
               {isCamOn && (
                 <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-slate-900/40 px-3 py-1.5 backdrop-blur-md border border-white/20 shadow-sm">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
                   <span className="text-sm font-medium text-white">
                     Camera đang bật
                   </span>
@@ -141,7 +191,8 @@ export default function JoinMeetingPage() {
               <div className="flex flex-col items-center gap-2 text-xs font-bold tracking-wider text-slate-500">
                 <button
                   onClick={toggleMic}
-                  className={`flex h-[52px] w-[52px] items-center justify-center rounded-full transition-all shadow-md ${
+                  disabled={isMediaLoading}
+                  className={`flex h-[52px] w-[52px] items-center justify-center rounded-full transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
                     isMicOn
                       ? "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 hover:border-blue-200"
                       : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
@@ -159,7 +210,8 @@ export default function JoinMeetingPage() {
               <div className="flex flex-col items-center gap-2 text-xs font-bold tracking-wider text-slate-500">
                 <button
                   onClick={toggleCamera}
-                  className={`flex h-[52px] w-[52px] items-center justify-center rounded-full transition-all shadow-md ${
+                  disabled={isMediaLoading}
+                  className={`flex h-[52px] w-[52px] items-center justify-center rounded-full transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
                     isCamOn
                       ? "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 hover:border-blue-200"
                       : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
@@ -174,7 +226,7 @@ export default function JoinMeetingPage() {
                 <span>{isCamOn ? "CAM BẬT" : "CAM TẮT"}</span>
               </div>
 
-              <div className="h-[52px] w-px bg-slate-200 mx-2"></div>
+              <div className="h-[52px] w-px bg-slate-200 mx-2" />
 
               <div className="flex flex-col items-center gap-2 text-xs font-bold tracking-wider text-slate-500">
                 <button className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-purple-600 hover:border-purple-200 transition-all shadow-md">
@@ -243,7 +295,7 @@ export default function JoinMeetingPage() {
                     MacBook Pro Microphone (Built-in)
                   </span>
                 </div>
-                <div className="h-px bg-slate-100 my-2"></div>
+                <div className="h-px bg-slate-100 my-2" />
                 <div className="flex items-center gap-3">
                   <MonitorSpeaker className="h-4 w-4 text-slate-400" />
                   <span className="truncate">AirPods Pro (Bluetooth)</span>

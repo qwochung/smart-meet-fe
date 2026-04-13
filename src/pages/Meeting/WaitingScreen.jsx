@@ -8,6 +8,10 @@ export default function WaitingScreen() {
   const [isCamOn, setIsCamOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
 
+  const stopTracks = (tracks) => {
+    tracks.forEach((track) => track.stop());
+  };
+
   useEffect(() => {
     const openCamera = async () => {
       try {
@@ -77,10 +81,35 @@ export default function WaitingScreen() {
 
   const toggleMic = () => {
     if (!streamRef.current) return;
-    streamRef.current.getAudioTracks().forEach((track) => {
-      track.enabled = !isMicOn;
-    });
-    setIsMicOn((prev) => !prev);
+
+    if (isMicOn) {
+      const audioTracks = streamRef.current.getAudioTracks();
+      stopTracks(audioTracks);
+      audioTracks.forEach((track) => streamRef.current.removeTrack(track));
+      setIsMicOn(false);
+      return;
+    }
+
+    navigator.mediaDevices
+      .getUserMedia({ audio: true, video: false })
+      .then((newStream) => {
+        const newAudioTrack = newStream.getAudioTracks()[0];
+
+        if (newAudioTrack) {
+          streamRef.current.addTrack(newAudioTrack);
+        }
+
+        newStream.getTracks().forEach((track) => {
+          if (track !== newAudioTrack) {
+            track.stop();
+          }
+        });
+
+        setIsMicOn(true);
+      })
+      .catch((err) => {
+        console.error('Không thể mở mic:', err);
+      });
   };
 
   const people = [
