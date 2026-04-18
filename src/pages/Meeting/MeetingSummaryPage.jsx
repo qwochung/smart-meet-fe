@@ -25,7 +25,7 @@ const transcriptSnippets = [
   },
 ];
 
-export default function MeetingEndedPage() {
+export default function MeetingSummaryPage() {
   const { roomId = 'product-sync' } = useParams();
 
   return (

@@ -88,7 +88,7 @@ export default function JoinMeetingPage() {
   };
 
   const handleJoin = () => {
-    navigate("/room/prod-sync");
+    navigate("/room/u7j-s48g-yjk");
   };
 
   const people = [
