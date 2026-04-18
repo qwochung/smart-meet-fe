@@ -157,7 +157,7 @@ function ControlBtn({ onClick, active, danger, children, title }) {
 }
 
 export default function MeetingRoomPage() {
-  const { roomId = 'project-sync' } = useParams();
+  const { roomId } = useParams(); // TODO: Check room available
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(true);
   const [micActive, setMicActive] = useState(true);

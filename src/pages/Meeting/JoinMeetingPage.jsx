@@ -139,7 +139,9 @@ export default function JoinMeetingPage() {
     }
   };
 
-  const handleJoin = () => navigate("/room/prod-sync");
+  const handleJoin = () => {
+    navigate("/room/u7j-s48g-yjk");
+  };
 
   const people = [
     "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80",
