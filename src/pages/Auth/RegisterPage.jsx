@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Github } from 'lucide-react';
 import { Button, Input } from '../../components/common';
+import api from '../../api';
 
 const RegisterPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -12,6 +14,7 @@ const RegisterPage = () => {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [apiMessage, setApiMessage] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -58,14 +61,31 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setApiMessage('');
 
     if (!validateForm()) {
       return;
     }
 
     setLoading(true);
-    console.log('Đăng ký:', formData);
-    setTimeout(() => setLoading(false), 1000);
+    try {
+      const response = await api.auth.register({
+        name: formData.fullName.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+      });
+
+      const backendMessage = response?.message || 'Dang ky thanh cong. Vui long kiem tra email de xac thuc tai khoan.';
+      navigate('/auth/login', {
+        replace: true,
+        state: { successMessage: backendMessage },
+      });
+    } catch (error) {
+      const message = error?.response?.data?.message || 'Dang ky that bai. Vui long thu lai.';
+      setApiMessage(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOAuthLogin = (provider) => {
@@ -175,6 +195,8 @@ const RegisterPage = () => {
           {/* Register Form */}
           {/* Fix: bỏ prop helperText trùng lặp với error — Input.jsx dùng error để hiển thị message */}
           <form onSubmit={handleSubmit} className="space-y-5">
+            {apiMessage && <p className="text-sm text-red-500">{apiMessage}</p>}
+
             <Input
               label="Họ và tên"
               type="text"

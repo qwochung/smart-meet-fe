@@ -1,8 +1,7 @@
-import { Button, Card, Input } from '../../components/common';
-import {useState} from "react";
-import api from "../../api";
-import { useNavigate } from 'react-router-dom';
+import { Button, Card, Input } from "../../components/common";
 import { useState } from "react";
+import api from "../../api";
+import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
   Clock3,
@@ -11,7 +10,6 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { Button, Card } from "../../components/common";
 
 function Toggle({ enabled, onToggle }) {
   return (
@@ -29,8 +27,8 @@ function Toggle({ enabled, onToggle }) {
 }
 
 export default function CreateMeetingPage() {
-  const [meetingName, setMeetingName] = useState('');
-  const [description, setDescription] = useState('');
+  const [meetingName, setMeetingName] = useState("");
+  const [description, setDescription] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -39,7 +37,7 @@ export default function CreateMeetingPage() {
       name: meetingName,
       hostId: 1, // TODO: Lấy hostId từ user hiện tại
       description: description,
-    }
+    };
 
     try {
       console.log(api.room.createRoom);
@@ -52,43 +50,43 @@ export default function CreateMeetingPage() {
     } catch (error) {
       console.error("Create room failed:", error);
     }
-  }
+  };
 
-  const [chuDe, setChuDe] = useState("");
-  const [ngay, setNgay] = useState("");
-  const [gio, setGio] = useState("");
-  const [nguoiThamGia, setNguoiThamGia] = useState([
+  const [topic, setTopic] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [participants, setParticipants] = useState([
     "sarah@nxus.ai",
     "mike.design@nxus.ai",
   ]);
-  const [emailMoi, setEmailMoi] = useState("");
-  const [tuDongGhiHinh, setTuDongGhiHinh] = useState(false);
-  const [taoBienBanAI, setTaoBienBanAI] = useState(true);
-  const [quyenRiengTu, setQuyenRiengTu] = useState("chi-khach-moi");
+  const [newEmail, setNewEmail] = useState("");
+  const [autoRecord, setAutoRecord] = useState(false);
+  const [generateAiMinutes, setGenerateAiMinutes] = useState(true);
+  const [privacySetting, setPrivacySetting] = useState("chi-khach-moi");
 
-  const themNguoiThamGia = () => {
-    const email = emailMoi.trim().toLowerCase();
-    if (!email || nguoiThamGia.includes(email)) {
-      setEmailMoi("");
+  const addParticipant = () => {
+    const email = newEmail.trim().toLowerCase();
+    if (!email || participants.includes(email)) {
+      setNewEmail("");
       return;
     }
 
-    setNguoiThamGia((prev) => [...prev, email]);
-    setEmailMoi("");
+    setParticipants((prev) => [...prev, email]);
+    setNewEmail("");
   };
 
-  const xoaNguoiThamGia = (emailCanXoa) => {
-    setNguoiThamGia((prev) => prev.filter((item) => item !== emailCanXoa));
+  const removeParticipant = (emailToRemove) => {
+    setParticipants((prev) => prev.filter((item) => item !== emailToRemove));
   };
 
-  const xuLyPhimTat = (event) => {
+  const handleInviteKeyDown = (event) => {
     if (event.key === "Enter" || event.key === ",") {
       event.preventDefault();
-      themNguoiThamGia();
+      addParticipant();
     }
   };
 
-  const xuLySubmit = (event) => {
+  const handleScheduleSubmit = (event) => {
     event.preventDefault();
   };
 
@@ -104,7 +102,7 @@ export default function CreateMeetingPage() {
       </div>
 
       <Card className="overflow-hidden border-slate-200 bg-white p-0 shadow-lg shadow-slate-200/60">
-        <form onSubmit={xuLySubmit} className="space-y-0">
+        <form onSubmit={handleScheduleSubmit} className="space-y-0">
           <div className="space-y-6 p-6 sm:p-8">
             <div>
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -112,8 +110,8 @@ export default function CreateMeetingPage() {
               </label>
               <input
                 type="text"
-                value={chuDe}
-                onChange={(event) => setChuDe(event.target.value)}
+                value={topic}
+                onChange={(event) => setTopic(event.target.value)}
                 placeholder="VD: Đồng bộ chiến lược sản phẩm Q4"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
               />
@@ -128,8 +126,8 @@ export default function CreateMeetingPage() {
                   <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     type="date"
-                    value={ngay}
-                    onChange={(event) => setNgay(event.target.value)}
+                    value={date}
+                    onChange={(event) => setDate(event.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
                   />
                 </div>
@@ -143,8 +141,8 @@ export default function CreateMeetingPage() {
                   <Clock3 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     type="time"
-                    value={gio}
-                    onChange={(event) => setGio(event.target.value)}
+                    value={time}
+                    onChange={(event) => setTime(event.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
                   />
                 </div>
@@ -156,7 +154,7 @@ export default function CreateMeetingPage() {
                 Mời người tham gia
               </label>
               <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-100">
-                {nguoiThamGia.map((email) => (
+                {participants.map((email) => (
                   <span
                     key={email}
                     className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
@@ -164,7 +162,7 @@ export default function CreateMeetingPage() {
                     {email}
                     <button
                       type="button"
-                      onClick={() => xoaNguoiThamGia(email)}
+                      onClick={() => removeParticipant(email)}
                       className="text-slate-400 transition-colors hover:text-slate-600"
                       aria-label={`Xóa ${email}`}
                     >
@@ -174,10 +172,10 @@ export default function CreateMeetingPage() {
                 ))}
                 <input
                   type="email"
-                  value={emailMoi}
-                  onChange={(event) => setEmailMoi(event.target.value)}
-                  onKeyDown={xuLyPhimTat}
-                  onBlur={themNguoiThamGia}
+                  value={newEmail}
+                  onChange={(event) => setNewEmail(event.target.value)}
+                  onKeyDown={handleInviteKeyDown}
+                  onBlur={addParticipant}
                   placeholder="Nhập email..."
                   className="min-w-[220px] flex-1 border-none bg-transparent p-0 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0"
                 />
@@ -201,8 +199,8 @@ export default function CreateMeetingPage() {
                     </p>
                   </div>
                   <Toggle
-                    enabled={tuDongGhiHinh}
-                    onToggle={() => setTuDongGhiHinh((prev) => !prev)}
+                    enabled={autoRecord}
+                    onToggle={() => setAutoRecord((prev) => !prev)}
                   />
                 </div>
 
@@ -216,8 +214,8 @@ export default function CreateMeetingPage() {
                     </p>
                   </div>
                   <Toggle
-                    enabled={taoBienBanAI}
-                    onToggle={() => setTaoBienBanAI((prev) => !prev)}
+                    enabled={generateAiMinutes}
+                    onToggle={() => setGenerateAiMinutes((prev) => !prev)}
                   />
                 </div>
               </div>
@@ -227,8 +225,8 @@ export default function CreateMeetingPage() {
                   Quyền riêng tư cuộc họp
                 </label>
                 <select
-                  value={quyenRiengTu}
-                  onChange={(event) => setQuyenRiengTu(event.target.value)}
+                  value={privacySetting}
+                  onChange={(event) => setPrivacySetting(event.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
                 >
                   <option value="chi-khach-moi">Chỉ người được mời</option>
