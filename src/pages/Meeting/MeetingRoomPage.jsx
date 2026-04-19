@@ -5,6 +5,10 @@ import {
   Video, VideoOff, Disc, Hand, MonitorUp, Users, PhoneOff, Send,
   Sparkles, Zap
 } from 'lucide-react';
+import {getStoredUser} from "../../utils/auth.js";
+import { Client } from '@stomp/stompjs';
+
+const WS_HOST = import.meta.env.VITE_WS_HOST;
 
 const participants = [
   {
@@ -166,6 +170,40 @@ export default function MeetingRoomPage() {
   const [messages, setMessages] = useState(initialMessages);
   const [elapsed, setElapsed] = useState(45 * 60 + 12);
   const messagesEndRef = useRef(null);
+  const currentUser = getStoredUser();
+  const { roomCode } = useParams();
+
+  useEffect(() => {
+    if (!roomCode) return;
+
+    const stompClient = new Client({
+      brokerURL: `${WS_HOST}/meet`,
+      onConnect: (frame) => {
+        console.log('Connected to WebSocket:', frame);
+
+        stompClient.subscribe(`/topic/room/${roomCode}/host-events`, (msg) => {
+          const requestData = JSON.parse(msg.body);
+          console.log('Received message from server:', requestData);
+          // TODO: Gọi UI hiện Pop-up duyệt người ở đây
+        });
+
+        stompClient.publish({
+          destination: `/app/room/${roomCode}/join`,
+          body: JSON.stringify({ userId: currentUser.id, role: 'HOST'}),
+        })
+      },
+
+      onStompError: (error) => {
+        console.error('WebSocket error:', error);
+      }
+    });
+
+      stompClient.activate();
+
+      return () => {
+        stompClient.deactivate();
+      };
+  }, [roomCode]);
 
   useEffect(() => {
     const t = setInterval(() => setElapsed(s => s + 1), 1000);

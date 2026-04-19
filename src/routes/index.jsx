@@ -71,8 +71,8 @@ const AppRoutes = () => {
               </RequireAuth>
             )}
           />
-          <Route path="/room/:roomId" element={<MeetingRoomPage />} />
-          <Route path="/room/:roomId/summary" element={<MeetingEndedPage />} />
+          <Route path="/room/:roomCode" element={<MeetingRoomPage />} />
+          <Route path="/room/:roomCode/summary" element={<MeetingEndedPage />} />
         </Route>
 
         {/* App modules */}
