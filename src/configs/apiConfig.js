@@ -1,6 +1,6 @@
-const API_BASE_URL = import.meta.env.API_BASE_URL || 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default {
-  baseURL: API_BASE_URL,
+  apiURL: API_URL,
 };
 

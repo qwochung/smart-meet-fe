@@ -1,7 +1,7 @@
-import { Button, Card, Input } from "../../components/common";
-import { useState } from "react";
+import {Button, Card, Input} from "../../components/common";
+import {useState} from "react";
 import api from "../../api";
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import {
   CalendarDays,
   Clock3,
@@ -10,6 +10,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import {getStoredUser} from "../../utils/auth.js";
 
 function Toggle({ enabled, onToggle }) {
   return (
@@ -30,39 +31,44 @@ export default function CreateMeetingPage() {
   const [meetingName, setMeetingName] = useState("");
   const [description, setDescription] = useState("");
   const navigate = useNavigate();
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  });
+  const [time, setTime] = useState("");
+  const [participants, setParticipants] = useState([]);
+  const [newEmail, setNewEmail] = useState("");
+  const [autoRecord, setAutoRecord] = useState(false);
+  const [generateAiMinutes, setGenerateAiMinutes] = useState(true);
+  const [privacySetting, setPrivacySetting] = useState("chi-khach-moi");
+
+  const currentUser = getStoredUser();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!currentUser.id) {
+      console.error("User not authenticated");
+      navigate("/login");
+      return;
+    }
     const payload = {
       name: meetingName,
-      hostId: 1, // TODO: Lấy hostId từ user hiện tại
+      hostId: currentUser?.id,
       description: description,
     };
 
     try {
       console.log(api.room.createRoom);
       const response = await api.room.createRoom(payload);
-      console.log(response);
-      console.log(navigate);
-      if (response?.roomCode) {
-        navigate(`/room/${response.roomCode}`);
+      const roomCode = response?.roomCode;
+      if (roomCode) {
+        console.log("Room created with code:", roomCode);
+        navigate(`/room/${roomCode}`);
       }
     } catch (error) {
       console.error("Create room failed:", error);
     }
   };
-
-  const [topic, setTopic] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [participants, setParticipants] = useState([
-    "sarah@nxus.ai",
-    "mike.design@nxus.ai",
-  ]);
-  const [newEmail, setNewEmail] = useState("");
-  const [autoRecord, setAutoRecord] = useState(false);
-  const [generateAiMinutes, setGenerateAiMinutes] = useState(true);
-  const [privacySetting, setPrivacySetting] = useState("chi-khach-moi");
 
   const addParticipant = () => {
     const email = newEmail.trim().toLowerCase();
@@ -86,10 +92,6 @@ export default function CreateMeetingPage() {
     }
   };
 
-  const handleScheduleSubmit = (event) => {
-    event.preventDefault();
-  };
-
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
@@ -102,7 +104,7 @@ export default function CreateMeetingPage() {
       </div>
 
       <Card className="overflow-hidden border-slate-200 bg-white p-0 shadow-lg shadow-slate-200/60">
-        <form onSubmit={handleScheduleSubmit} className="space-y-0">
+        <form onSubmit={handleSubmit} className="space-y-0">
           <div className="space-y-6 p-6 sm:p-8">
             <div>
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -110,9 +112,9 @@ export default function CreateMeetingPage() {
               </label>
               <input
                 type="text"
-                value={topic}
-                onChange={(event) => setTopic(event.target.value)}
-                placeholder="VD: Đồng bộ chiến lược sản phẩm Q4"
+                value={meetingName}
+                onChange={(event) => setMeetingName(event.target.value)}
+                placeholder="Nhâp tên cuộc họp..."
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
               />
             </div>

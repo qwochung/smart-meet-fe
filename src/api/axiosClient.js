@@ -3,14 +3,14 @@ import apiConfig from '../configs/apiConfig';
 import { tokenStorage } from './tokenStorage';
 
 const axiosClient = axios.create({
-  baseURL: apiConfig.baseURL,
+  baseURL: apiConfig.apiURL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 const refreshClient = axios.create({
-  baseURL: apiConfig.baseURL,
+  baseURL: apiConfig.apiURL,
   headers: {
     'Content-Type': 'application/json',
   },
