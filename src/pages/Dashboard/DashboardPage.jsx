@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Activity, CalendarDays, Clock3, FilePlus2, FileText, Mic, Plus, Search, Video } from 'lucide-react';
 import { Button, Card, Input } from '../../components/common';
+import { useAuth } from '../../contexts/AuthContext';
 
 const upcomingMeetings = [
   { id: 'u1', title: 'Đồng bộ sản phẩm hằng tuần', time: 'Hôm nay, 10:00', attendees: 8 },
@@ -40,11 +41,15 @@ const recentTranscripts = [
 ];
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Tổng quan</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            {user?.name ? `Chào mừng, ${user.name}` : 'Tổng quan'}
+          </h1>
           <p className="mt-1 text-sm text-slate-500">Xem nhanh cuộc họp, biên bản và các hoạt động sắp tới.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">

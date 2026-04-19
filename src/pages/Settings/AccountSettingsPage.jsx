@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { Button, Card, Input } from '../../components/common';
 
 const tabs = [
@@ -8,13 +9,28 @@ const tabs = [
 ];
 
 export default function AccountSettingsPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
+  const [profileForm, setProfileForm] = useState({
+    fullName: '',
+    email: '',
+  });
+
+  useEffect(() => {
+    setProfileForm({
+      fullName: user?.name || '',
+      email: user?.email || '',
+    });
+  }, [user]);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Cài đặt tài khoản</h1>
-        <p className="mt-1 text-sm text-slate-500">Quản lý hồ sơ, mật khẩu và tùy chọn thông báo.</p>
+        <p className="mt-1 text-sm text-slate-500">
+          Quản lý hồ sơ, mật khẩu và tùy chọn thông báo.
+          {user?.name ? ` Đang đăng nhập với ${user.name}.` : ''}
+        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
@@ -38,8 +54,18 @@ export default function AccountSettingsPage() {
         <Card>
           {activeTab === 'profile' && (
             <form className="grid gap-4 md:grid-cols-2">
-              <Input label="Họ và tên" defaultValue="Nguyen Van A" />
-              <Input label="Email" defaultValue="nguyenvana@smartmeet.com" />
+              <Input
+                label="Họ và tên"
+                value={profileForm.fullName}
+                onChange={(event) => setProfileForm((current) => ({ ...current, fullName: event.target.value }))}
+                placeholder="Nhập họ và tên"
+              />
+              <Input
+                label="Email"
+                value={profileForm.email}
+                onChange={(event) => setProfileForm((current) => ({ ...current, email: event.target.value }))}
+                placeholder="Nhập email"
+              />
               <div className="md:col-span-2 flex justify-end">
                 <Button>Lưu hồ sơ</Button>
               </div>

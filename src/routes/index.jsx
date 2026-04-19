@@ -1,4 +1,4 @@
-import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, VerifyEmailPage } from '../pages/Auth';
 import {JoinMeetingPage, MeetingEndedPage, MeetingRoomPage} from "../pages/Meeting/index.js";
 import {AppLayout, MainLayout} from "../layouts/index.js";
@@ -11,8 +11,10 @@ import { DashboardPage } from '../pages/Dashboard';
 import { isAuthenticated } from '../utils/auth';
 
 const RequireAuth = ({ children }) => {
+  const location = useLocation();
+
   if (!isAuthenticated()) {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to="/auth/login" replace state={{ from: location }} />;
   }
 
   return children;
@@ -61,7 +63,14 @@ const AppRoutes = () => {
 
         {/*Meeting */}
         <Route element={<MainLayout/>}>
-          <Route path="/join" element={<JoinMeetingPage/>}/>
+          <Route
+            path="/join"
+            element={(
+              <RequireAuth>
+                <JoinMeetingPage />
+              </RequireAuth>
+            )}
+          />
           <Route path="/room/:roomId" element={<MeetingRoomPage />} />
           <Route path="/room/:roomId/summary" element={<MeetingEndedPage />} />
         </Route>

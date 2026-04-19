@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Sparkles, UsersRound, Video } from 'lucide-react';
 import { Button, Header, SiteFooter } from '../../components/common';
+import { useAuth } from '../../contexts/AuthContext';
 
 const features = [
   { title: 'Cuộc gọi video 4K', description: 'Cuộc họp ổn định và rõ nét cho mọi quy mô đội ngũ.', icon: Video },
@@ -10,6 +11,11 @@ const features = [
 ];
 
 export default function HomePage() {
+  const { isAuthenticated } = useAuth();
+  const joinMeetingLink = isAuthenticated
+    ? '/join'
+    : '/auth/login';
+
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <Header variant="public" fixed />
@@ -24,7 +30,11 @@ export default function HomePage() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link to="/minutes"><Button size="lg">Vào workspace</Button></Link>
-              <Link to="/join" className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
+              <Link
+                to={joinMeetingLink}
+                state={!isAuthenticated ? { from: { pathname: '/join' } } : undefined}
+                className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
                 Tham gia cuộc họp
               </Link>
               <Link to="/features" className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
