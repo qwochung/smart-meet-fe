@@ -1,15 +1,21 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Video, Shield, Github } from 'lucide-react';
 import { Button, Input, Checkbox } from '../../components/common';
+import api from '../../api';
+import { persistAuthTokens } from '../../utils/auth';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false,
   });
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage] = useState(location?.state?.successMessage || '');
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -21,9 +27,36 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    setErrorMessage('');
+
+    if (!formData.email.trim() || !formData.password.trim()) {
+      setErrorMessage('Vui long nhap day du email va mat khau.');
+      return;
+    }
+
     setLoading(true);
-    console.log('Đăng nhập:', formData);
-    setTimeout(() => setLoading(false), 1000);
+
+    try {
+      const response = await api.auth.login({
+        email: formData.email.trim(),
+        password: formData.password,
+      });
+
+      const { accessToken } = persistAuthTokens(response);
+      if (!accessToken) {
+        setErrorMessage('Dang nhap thanh cong nhung khong nhan duoc access token.');
+        return;
+      }
+
+      const redirectPath = location?.state?.from?.pathname || '/dashboard';
+      navigate(redirectPath, { replace: true });
+    } catch (error) {
+      const message = error?.response?.data?.message || 'Dang nhap that bai. Vui long thu lai.';
+      setErrorMessage(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOAuthLogin = (provider) => {
@@ -144,6 +177,9 @@ const LoginPage = () => {
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
+            {successMessage && <p className="text-sm text-green-600">{successMessage}</p>}
+            {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
+
             <Input
               label="Địa chỉ email"
               type="email"
