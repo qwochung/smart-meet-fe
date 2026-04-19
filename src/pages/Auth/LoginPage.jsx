@@ -3,11 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Video, Shield, Github } from 'lucide-react';
 import { Button, Input, Checkbox } from '../../components/common';
 import api from '../../api';
-import { persistAuthTokens } from '../../utils/auth';
+import { useAuth } from '../../contexts/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setSession } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -43,13 +44,16 @@ const LoginPage = () => {
         password: formData.password,
       });
 
-      const { accessToken } = persistAuthTokens(response);
+      const { accessToken } = setSession(response);
       if (!accessToken) {
         setErrorMessage('Dang nhap thanh cong nhung khong nhan duoc access token.');
         return;
       }
 
-      const redirectPath = location?.state?.from?.pathname || '/dashboard';
+      const redirectFrom = location?.state?.from;
+      const redirectPath = redirectFrom
+        ? `${redirectFrom.pathname || '/dashboard'}${redirectFrom.search || ''}${redirectFrom.hash || ''}`
+        : '/dashboard';
       navigate(redirectPath, { replace: true });
     } catch (error) {
       const message = error?.response?.data?.message || 'Dang nhap that bai. Vui long thu lai.';
