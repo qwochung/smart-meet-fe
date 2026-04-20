@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   Calendar,
@@ -14,9 +14,79 @@ import {
   MonitorUp,
   Cast,
 } from "lucide-react";
+import api from "../../api";
+
+const normalizeParticipants = (roomData = {}) => {
+  const source =
+    roomData.participants ||
+    roomData.members ||
+    roomData.attendees ||
+    roomData.users ||
+    [];
+
+  if (!Array.isArray(source)) {
+    return [];
+  }
+
+  return source.map((participant, index) => ({
+    id: participant?.id || participant?.userId || participant?.email || index,
+    name:
+      participant?.name ||
+      participant?.fullName ||
+      participant?.displayName ||
+      participant?.email ||
+      "Thành viên",
+    avatar:
+      participant?.avatar ||
+      participant?.avatarUrl ||
+      participant?.photoURL ||
+      participant?.image ||
+      "",
+  }));
+};
+
+const getRoomData = (response) => response?.data || response || {};
+
+const formatRoomTime = (roomData = {}) => {
+  const startRaw = roomData.startTime || roomData.startAt || roomData.scheduledAt;
+  const endRaw = roomData.endTime || roomData.endAt;
+
+  if (!startRaw) {
+    return "Bắt đầu ngay khi bạn vào phòng";
+  }
+
+  const start = new Date(startRaw);
+  if (Number.isNaN(start.getTime())) {
+    return "Bắt đầu ngay khi bạn vào phòng";
+  }
+
+  const formatter = new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+  });
+
+  if (!endRaw) {
+    return formatter.format(start);
+  }
+
+  const end = new Date(endRaw);
+  if (Number.isNaN(end.getTime())) {
+    return formatter.format(start);
+  }
+
+  const timeFormatter = new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return `${timeFormatter.format(start)} - ${timeFormatter.format(end)} · ${formatter.format(start)}`;
+};
 
 export default function JoinMeetingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const videoRef = useRef(null);
   const videoStreamRef = useRef(null);
   const audioStreamRef = useRef(null);
@@ -25,6 +95,11 @@ export default function JoinMeetingPage() {
   const [isCamOn, setIsCamOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
   const [isMediaLoading, setIsMediaLoading] = useState(false);
+  const [isRoomLoading, setIsRoomLoading] = useState(false);
+  const [roomError, setRoomError] = useState("");
+  const [roomInfo, setRoomInfo] = useState(null);
+
+  const roomCode = searchParams.get("roomCode")?.trim() || "";
 
   const stopStream = (stream) => {
     stream?.getTracks().forEach((track) => track.stop());
@@ -76,6 +151,40 @@ export default function JoinMeetingPage() {
       audioStreamRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!roomCode) {
+      setRoomInfo(null);
+      setRoomError("Không tìm thấy mã phòng. Vui lòng kiểm tra lại liên kết.");
+      return;
+    }
+
+    let cancelled = false;
+    setIsRoomLoading(true);
+    setRoomError("");
+
+    const fetchRoom = async () => {
+      try {
+        const response = await api.room.getRoomByCode(roomCode);
+        if (cancelled) return;
+        setRoomInfo(getRoomData(response));
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Không lấy được thông tin phòng:", error);
+        setRoomError("Không thể tải thông tin phòng. Vui lòng thử lại sau.");
+      } finally {
+        if (!cancelled) {
+          setIsRoomLoading(false);
+        }
+      }
+    };
+
+    fetchRoom();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [roomCode]);
 
   const toggleCamera = async () => {
     if (isMediaLoading) return;
@@ -140,14 +249,24 @@ export default function JoinMeetingPage() {
   };
 
   const handleJoin = () => {
-    navigate("/room/u7j-s48g-yjk");
+    if (!roomCode) return;
+    navigate(`/room/${roomCode}`, {
+      state: {
+        joinSettings: {
+          micOn: isMicOn,
+          camOn: isCamOn,
+        },
+      },
+    });
   };
 
-  const people = [
-    "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80",
-    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80",
-    "https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=100&q=80",
-  ];
+  const participants = normalizeParticipants(roomInfo || {});
+  const roomName = roomInfo?.name || roomInfo?.title || `Phòng ${roomCode || "meeting"}`;
+  const roomLink = roomInfo?.meetingLink || roomInfo?.roomLink || `smart.meet/room/${roomCode || "-"}`;
+  const participantsText = participants.length
+    ? `${participants[0].name} và ${Math.max(participants.length - 1, 0)} người khác đã vào phòng`
+    : "Chưa có ai trong phòng. Bạn sẽ là người đầu tiên.";
+  const canJoin = Boolean(roomCode) && !isRoomLoading;
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
@@ -246,40 +365,55 @@ export default function JoinMeetingPage() {
             </div>
 
             <h2 className="mt-4 text-[26px] font-extrabold leading-tight text-slate-900">
-              Đồng bộ hằng tuần: Lộ trình sản phẩm & kế hoạch Sprint
+              {isRoomLoading ? "Đang tải thông tin cuộc họp..." : roomName}
             </h2>
 
             <div className="mt-5 flex items-center gap-5 text-sm font-medium text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-slate-400" />
-                <span>10:00 AM - 11:00 AM</span>
+                <span>{formatRoomTime(roomInfo || {})}</span>
               </div>
               <div className="flex items-center gap-2">
                 <LinkIcon className="h-4 w-4 text-slate-400" />
                 <span className="text-blue-600 hover:underline cursor-pointer">
-                  smart.meet/prod-sync
+                  {roomLink}
                 </span>
               </div>
             </div>
+
+            {roomError && (
+              <p className="mt-3 text-sm font-medium text-red-600">{roomError}</p>
+            )}
 
             <div className="mt-8 border-t border-slate-100" />
 
             <div className="mt-6">
               <p className="text-sm font-semibold text-slate-700">
-                John, Sarah và 3 người khác đã vào phòng
+                {participantsText}
               </p>
               <div className="mt-4 flex items-center">
-                {people.map((person, index) => (
-                  <img
-                    key={person}
-                    src={person}
-                    alt="Participant avatar"
-                    className={`h-11 w-11 rounded-full border-[3px] border-white bg-slate-100 object-cover shadow-sm ${index === 0 ? "" : "-ml-3"}`}
-                  />
+                {participants.slice(0, 3).map((person, index) => (
+                  person.avatar ? (
+                    <img
+                      key={person.id}
+                      src={person.avatar}
+                      alt={person.name}
+                      className={`h-11 w-11 rounded-full border-[3px] border-white bg-slate-100 object-cover shadow-sm ${index === 0 ? "" : "-ml-3"}`}
+                    />
+                  ) : (
+                    <div
+                      key={person.id}
+                      className={`h-11 w-11 rounded-full border-[3px] border-white bg-slate-200 text-xs font-bold text-slate-700 shadow-sm flex items-center justify-center ${index === 0 ? "" : "-ml-3"}`}
+                    >
+                      {person.name.slice(0, 1).toUpperCase()}
+                    </div>
+                  )
                 ))}
-                <div className="-ml-3 flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-white bg-slate-100 text-xs font-bold text-slate-600 shadow-sm z-10 hover:bg-slate-200 transition cursor-pointer">
-                  +2
-                </div>
+                {participants.length > 3 && (
+                  <div className="-ml-3 flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-white bg-slate-100 text-xs font-bold text-slate-600 shadow-sm z-10 hover:bg-slate-200 transition cursor-pointer">
+                    +{participants.length - 3}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -308,9 +442,10 @@ export default function JoinMeetingPage() {
             <div className="mt-8 space-y-4">
               <button
                 onClick={handleJoin}
+                disabled={!canJoin}
                 className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-blue-600 py-4 text-[15px] font-bold text-white shadow-lg shadow-blue-600/30 hover:bg-blue-700 hover:-translate-y-0.5 transition-all"
               >
-                Tham gia ngay
+                {isRoomLoading ? "Đang chuẩn bị phòng..." : "Tham gia ngay"}
                 <ArrowRight className="h-5 w-5" />
               </button>
               <button className="w-full text-center text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
