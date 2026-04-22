@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import {Navigate, useLocation, useNavigate, useParams} from "react-router-dom";
 import { Client } from "@stomp/stompjs";
 import { getStoredUser } from "../../utils/auth.js";
 import api from "../../api";
@@ -25,7 +25,6 @@ export default function MeetingRoomPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { roomCode } = useParams();
-  const currentUser = getStoredUser();
 
   const initialJoinSettings = location.state?.joinSettings;
   const [chatOpen, setChatOpen] = useState(true);
@@ -51,21 +50,37 @@ export default function MeetingRoomPage() {
   const localStreamRef = useRef(new MediaStream());
   const [localStreamVersion, setLocalStreamVersion] = useState(0);
 
+  const [isHost, setIsHost] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+
+  const currentUser = getStoredUser();
+  if (!currentUser) {
+    return <Navigate to="/auth/login" replace />;
+  }
+
+  // Fetch room info and participants, determine if current user is host
   useEffect(() => {
     if (!roomCode) return;
-
     let cancelled = false;
     const fetchRoom = async () => {
       try {
-        const response = await api.room.getRoomByCode(roomCode);
+        const roomData = await api.room.getRoomByCode(roomCode);
         if (cancelled) return;
-        const roomData = getRoomData(response);
-        setRoomInfo(roomData);
-        setRoomParticipants(
-          normalizeRoomParticipants(roomData, currentUser?.id),
-        );
+
+        if (roomData?.hostUser?.id === currentUser?.id) {
+          setIsHost(true);
+          setRoomInfo(roomData);
+          setRoomParticipants(
+            normalizeRoomParticipants(roomData, currentUser?.id),
+          );
+        } else {
+          setIsHost(false);
+        }
+
       } catch (error) {
         console.error("Không lấy được thông tin phòng:", error);
+      } finally {
+        if (!cancelled) setIsChecking(false);
       }
     };
 
@@ -76,8 +91,9 @@ export default function MeetingRoomPage() {
     };
   }, [roomCode, currentUser?.id]);
 
+  //
   useEffect(() => {
-    if (!roomCode || !currentUser?.id || !WS_HOST) return;
+    if (!roomCode || !isHost || !currentUser?.id || !WS_HOST) return;
 
     const stompClient = new Client({
       brokerURL: `${WS_HOST}/meet`,
@@ -93,7 +109,9 @@ export default function MeetingRoomPage() {
 
         stompClient.publish({
           destination: `/app/room/${roomCode}/join`,
-          body: JSON.stringify({ userId: currentUser.id, role: "HOST" }),
+          body: JSON.stringify({
+            userId: currentUser.id,
+            role: isHost? "HOST" : "PARTICIPANT" }),
         });
       },
       onStompError: (error) => {
@@ -108,7 +126,9 @@ export default function MeetingRoomPage() {
     };
   }, [roomCode, currentUser?.id]);
 
+  // Access camera mic
   useEffect(() => {
+    if (!currentUser || !isHost) return;
     const openInitialMedia = async () => {
       if (!micActive && !videoActive) return;
 
@@ -339,6 +359,12 @@ export default function MeetingRoomPage() {
     [participantCount],
   );
 
+  if (isChecking) {
+    return <div>Loading...</div>;
+  }
+  if (!isHost) {
+    return navigate(`/join?roomCode=${roomCode}`);
+  }
   return (
     <>
       <style>{`

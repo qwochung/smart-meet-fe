@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import {Navigate, useNavigate, useSearchParams} from "react-router-dom";
 import {
   ArrowRight,
   Calendar,
@@ -15,7 +15,11 @@ import {
   Cast,
 } from "lucide-react";
 import api from "../../api";
+import {getStoredUser} from "../../utils/auth.js";
+import { Client } from "@stomp/stompjs";
 
+
+const WS_HOST = import.meta.env.VITE_WS_HOST;
 const normalizeParticipants = (roomData = {}) => {
   const source =
     roomData.participants ||
@@ -85,6 +89,10 @@ const formatRoomTime = (roomData = {}) => {
 };
 
 export default function JoinMeetingPage() {
+  const currentUser = getStoredUser();
+  if (!currentUser) {
+    return <Navigate to="/auth/login" replace />;
+  }
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const videoRef = useRef(null);
@@ -105,6 +113,9 @@ export default function JoinMeetingPage() {
     stream?.getTracks().forEach((track) => track.stop());
   };
 
+  const stompClientRef = useRef(null);
+
+  // Camera mic
   useEffect(() => {
     let cancelled = false;
 
@@ -152,6 +163,7 @@ export default function JoinMeetingPage() {
     };
   }, []);
 
+  // Fetch room info
   useEffect(() => {
     if (!roomCode) {
       setRoomInfo(null);
@@ -185,6 +197,57 @@ export default function JoinMeetingPage() {
       cancelled = true;
     };
   }, [roomCode]);
+
+  // Socket for real-time
+  useEffect(() => {
+    if (!roomCode) return;
+
+    const client = new Client({
+      brokerURL: `${WS_HOST}/meet`,
+      onConnect: () => {
+        console.log("WS connected");
+
+        client.subscribe(
+          `topic/room/${roomCode}/user/${currentUser?.id}`,
+          (message) => {
+            const data = JSON.parse(message.body);
+            console.log("Received WS message:", data);
+
+            if (data.type === "JOIN_APPROVED") {
+              navigate(`/room/${roomCode}`, {
+                state: {
+                  joinSettings: {
+                    micOn: isMicOn,
+                    camOn: isCamOn,
+                  },
+                },
+              });
+            }
+
+            if (data.type === "JOIN_REJECTED") {
+              setRoomError("Yêu cầu bị từ chối");
+            }
+
+          }
+        )
+      },
+
+      onStompError: (frame) => {
+        console.error("WS STOMP error:", frame);
+      },
+    });
+
+    client.activate();
+    stompClientRef.current = client;
+
+    return () => {
+      client.deactivate()
+        .then(r => console.log("WS disconnected"))
+        .catch(err => console.error("Error disconnecting WS:", err));
+    }
+
+  }, [roomCode, currentUser?.id]);
+
 
   const toggleCamera = async () => {
     if (isMediaLoading) return;
@@ -249,14 +312,16 @@ export default function JoinMeetingPage() {
   };
 
   const handleJoin = () => {
-    if (!roomCode) return;
-    navigate(`/room/${roomCode}`, {
-      state: {
-        joinSettings: {
-          micOn: isMicOn,
-          camOn: isCamOn,
-        },
-      },
+    if (!roomCode || !stompClientRef.current) return;
+    setIsRoomLoading(true);
+
+    stompClientRef.current.publish({
+      destination: `/app/room/${roomCode}/join`,
+      body: JSON.stringify({
+        userId: currentUser?.id,
+        role: "PARTICIPANT",
+        type: "JOIN_REQUEST",
+      })
     });
   };
 
@@ -268,6 +333,9 @@ export default function JoinMeetingPage() {
     : "Chưa có ai trong phòng. Bạn sẽ là người đầu tiên.";
   const canJoin = Boolean(roomCode) && !isRoomLoading;
 
+  if(!roomCode){
+    return <Navigate to="/dashboard" replace/>;
+  }
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       <main className="flex flex-1 items-center justify-center p-6 lg:p-12">
@@ -445,7 +513,7 @@ export default function JoinMeetingPage() {
                 disabled={!canJoin}
                 className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-blue-600 py-4 text-[15px] font-bold text-white shadow-lg shadow-blue-600/30 hover:bg-blue-700 hover:-translate-y-0.5 transition-all"
               >
-                {isRoomLoading ? "Đang chuẩn bị phòng..." : "Tham gia ngay"}
+                {isRoomLoading ? "Đang chờ tham gia" : "Tham gia ngay"}
                 <ArrowRight className="h-5 w-5" />
               </button>
               <button className="w-full text-center text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
