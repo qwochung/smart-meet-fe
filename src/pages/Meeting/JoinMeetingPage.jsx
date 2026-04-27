@@ -225,7 +225,13 @@ export default function JoinMeetingPage() {
             }
 
             if (data.type === "JOIN_REJECTED") {
-              setRoomError("Yêu cầu bị từ chối");
+              navigate("/join/denied", {
+                replace: true,
+                state: {
+                  roomCode,
+                  roomName,
+                },
+              });
             }
 
           }
