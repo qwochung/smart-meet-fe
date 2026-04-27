@@ -23,11 +23,14 @@ import {
 const WS_HOST = import.meta.env.VITE_WS_HOST;
 
 export default function MeetingRoomPage() {
+
   const navigate = useNavigate();
   const location = useLocation();
   const { roomCode } = useParams();
 
   const initialJoinSettings = location.state?.joinSettings;
+  const isApproved = location.state?.approved;
+
   const [chatOpen, setChatOpen] = useState(true);
   const [micActive, setMicActive] = useState(
     initialJoinSettings?.micOn ?? true,
@@ -46,13 +49,29 @@ export default function MeetingRoomPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [copied, setCopied] = useState(false);
   const [participantQuery, setParticipantQuery] = useState("");
-
   const messagesEndRef = useRef(null);
   const localStreamRef = useRef(new MediaStream());
   const [localStreamVersion, setLocalStreamVersion] = useState(0);
-
   const [isHost, setIsHost] = useState(false);
+  const [canEnterRoom, setCanEnterRoom] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const [pendingParticipants, setPendingParticipants] = useState([]);
+  const stompClientRef = useRef(null);
+
+
+  const handleAcceptParticipant = (userId) => {
+    api.room.acceptJoinRequest(roomCode, userId)
+      .then(r => console.log("Accept join request success"))
+      .catch(e => console.error("Accept join request failed:", e));
+
+    setPendingParticipants(prev => prev.filter(p => p.id !== userId));
+  };
+
+  const handleRejectParticipant = (userId) => {
+    // Gửi sự kiện qua websocket: từ chối user join
+    // stompClient.publish({ destination: `/app/room/${roomCode}/reject`, body: JSON.stringify({ userId }) });
+    setPendingParticipants(prev => prev.filter(p => p.id !== userId));
+  };
 
   const currentUser = getStoredUser();
   if (!currentUser) {
@@ -96,6 +115,7 @@ export default function MeetingRoomPage() {
   useEffect(() => {
     if (!roomCode || !isHost || !currentUser?.id || !WS_HOST) return;
 
+    console.log("Connecting to WebSocket for room:", roomCode);
     const stompClient = new Client({
       brokerURL: `${WS_HOST}/meet`,
       onConnect: () => {
@@ -103,10 +123,34 @@ export default function MeetingRoomPage() {
           try {
             const requestData = JSON.parse(msg.body || "{}");
             console.log("Host event:", requestData);
+
+            if (requestData.type === "JOIN_REQUEST") {
+              setPendingParticipants((prev) => {
+
+                // 1. Kiểm tra xem user đã có trong danh sách chờ chưa (tránh render trùng nếu spam)
+                const isAlreadyPending = prev.some((p) => p.id === requestData.userId);
+                if (isAlreadyPending) return prev;
+
+                // 2. Format lại data cho khớp với UI (userId -> id, userName -> name)
+                const newPendingUser = {
+                  id: requestData.actorId,
+                  name: requestData.userName,
+                  avatar: requestData.avatar
+                };
+
+                // 3. Thêm user mới vào cuối danh sách hiện tại
+                const updated = [...prev, newPendingUser];
+
+                // console.log("Updated pendingParticipants:", updated);
+
+                return updated;
+                })
+            }
           } catch (error) {
             console.error("Parse host-events failed:", error);
           }
         });
+        console.log("WebSocket connected");
 
         stompClient.publish({
           destination: `/app/room/${roomCode}/join`,
@@ -121,11 +165,14 @@ export default function MeetingRoomPage() {
     });
 
     stompClient.activate();
+    stompClientRef.current = stompClient;
 
     return () => {
-      stompClient.deactivate();
+      stompClient.deactivate()
+        .then(r => console.log("WebSocket disconnected:", r))
+        .catch(e => console.error("WebSocket disconnect error:", e));
     };
-  }, [roomCode, currentUser?.id]);
+  }, [roomCode, currentUser?.id, isHost]);
 
   // Access camera mic
   useEffect(() => {
@@ -293,7 +340,7 @@ export default function MeetingRoomPage() {
     localStreamVersion,
   ]);
 
-  const participantCount = gridParticipants.length;
+  const participantCount = pendingParticipants.length;
   const visibleParticipants = gridParticipants.filter((participant) => {
     const searchValue = participantQuery.trim().toLowerCase();
     if (!searchValue) return true;
@@ -368,7 +415,7 @@ export default function MeetingRoomPage() {
       />
     );
   }
-  if (!isHost) {
+  if (!isHost && !isApproved) {
     return <Navigate to={`/join?roomCode=${roomCode}`} replace />;
   }
   return (
@@ -453,6 +500,9 @@ export default function MeetingRoomPage() {
               contributorCount={contributorCount}
               onOpenInvite={() => setIsInviteModalOpen(true)}
               onClose={() => setParticipantsOpen(false)}
+              pendingParticipants={pendingParticipants}
+              onAccept={handleAcceptParticipant}
+              onReject={handleRejectParticipant}
             />
           )}
         </main>

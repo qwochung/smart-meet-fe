@@ -1,13 +1,15 @@
-import { ChevronUp, MoreVertical, Search, UserPlus, X } from "lucide-react";
+import { ChevronUp, MoreVertical, Search, UserPlus, X, Check } from "lucide-react";
 
 export default function MeetingParticipantsPanel({
-  participantQuery,
-  onParticipantQueryChange,
-  visibleParticipants,
-  contributorCount,
-  onOpenInvite,
-  onClose,
-}) {
+                                                   participantQuery,
+                                                   onParticipantQueryChange,
+                                                   visibleParticipants,
+                                                   contributorCount,
+                                                   onOpenInvite,
+                                                   onClose, pendingParticipants = [],
+                                                   onAccept,
+                                                   onReject
+                                                 }) {
   return (
     <aside
       style={{
@@ -122,6 +124,44 @@ export default function MeetingParticipantsPanel({
         />
       </div>
 
+      {pendingParticipants.length > 0 && (
+        <>
+          <div style={{ marginTop: 16, fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(255,255,255,0.42)" }}>
+            ĐANG CHỜ DUYỆT ({pendingParticipants.length})
+          </div>
+          <div style={{ marginTop: 10, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, overflow: "hidden", background: "rgba(255,255,255,0.03)", display: "flex", flexDirection: "column", padding: "8px 0" }}>
+            {pendingParticipants.map((user) => {
+              const initials = String(user.name || "U").slice(0, 1).toUpperCase();
+              return (
+                <div key={user.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 14px" }}>
+                  <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 600, flexShrink: 0 }}>
+                    {initials}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#f3f4f6", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {user.name || "Người dùng ẩn danh"}
+                    </div>
+                    <div style={{ marginTop: 2, fontSize: 12, color: "rgba(255,255,255,0.56)" }}>
+                      Đang yêu cầu tham gia...
+                    </div>
+                  </div>
+
+                  {/* Nút thao tác: Từ chối & Chấp nhận */}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => onReject(user.id)} style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.1)", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                      <X size={16} />
+                    </button>
+                    <button onClick={() => onAccept(user.id)} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgb(59, 130, 246)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                      <Check size={16} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
       <div
         style={{
           marginTop: 16,
@@ -160,7 +200,7 @@ export default function MeetingParticipantsPanel({
           }}
         >
           <span>Người tham gia</span>
-          <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 15 }}>
+          <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 15 , padding: "0px 5px "}}>
             {contributorCount}
           </span>
           <button

@@ -208,14 +208,17 @@ export default function JoinMeetingPage() {
         console.log("WS connected");
 
         client.subscribe(
-          `topic/room/${roomCode}/user/${currentUser?.id}`,
+          `/topic/room/${roomCode}/user/${currentUser?.id}`,
           (message) => {
             const data = JSON.parse(message.body);
             console.log("Received WS message:", data);
 
             if (data.type === "JOIN_APPROVED") {
+              console.log("Join approved, navigating to room with settings...")
+
               navigate(`/room/${roomCode}`, {
                 state: {
+                  approved: true,
                   joinSettings: {
                     micOn: isMicOn,
                     camOn: isCamOn,
@@ -324,7 +327,7 @@ export default function JoinMeetingPage() {
     stompClientRef.current.publish({
       destination: `/app/room/${roomCode}/join`,
       body: JSON.stringify({
-        userId: currentUser?.id,
+        actorId: currentUser?.id,
         role: "PARTICIPANT",
         type: "JOIN_REQUEST",
       })

@@ -58,7 +58,7 @@ export default function CreateMeetingPage() {
     };
 
     try {
-      console.log(api.room.createRoom);
+
       const response = await api.room.createRoom(payload);
       const roomCode = response?.roomCode;
       if (roomCode) {

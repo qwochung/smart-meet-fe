@@ -9,5 +9,9 @@ export const roomApi = {
   // Hàm lấy thông tin phòng bằng roomCode
   getRoomByCode: async (roomCode) => {
     return await axiosClient.get(`/rooms/${roomCode}/available`);
+  },
+
+  acceptJoinRequest: async (roomCode,data) => {
+    return await axiosClient.post(`/rooms/${roomCode}/user/accept`, data)
   }
 };
