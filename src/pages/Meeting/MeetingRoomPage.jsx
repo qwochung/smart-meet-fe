@@ -11,6 +11,7 @@ import {
   MeetingRoomHeader,
   ParticipantTile,
 } from "../../components/meeting";
+import { LoadingPage } from "../System";
 import {
   formatElapsedTime,
   getParticipantGridStyle,
@@ -360,10 +361,15 @@ export default function MeetingRoomPage() {
   );
 
   if (isChecking) {
-    return <div>Loading...</div>;
+    return (
+      <LoadingPage
+        title="Đang kiểm tra quyền vào phòng"
+        description="Hệ thống đang xác minh vai trò của bạn trước khi vào cuộc gọi."
+      />
+    );
   }
   if (!isHost) {
-    return navigate(`/join?roomCode=${roomCode}`);
+    return <Navigate to={`/join?roomCode=${roomCode}`} replace />;
   }
   return (
     <>

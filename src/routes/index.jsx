@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, VerifyEmailPage } from '../pages/Auth';
-import {JoinMeetingPage, MeetingEndedPage, MeetingRoomPage} from "../pages/Meeting/index.js";
+import {JoinMeetingPage, JoinRequestDeniedPage, MeetingEndedPage, MeetingRoomPage} from "../pages/Meeting/index.js";
 import {AppLayout, MainLayout} from "../layouts/index.js";
 import {HomePage} from '../pages/Home';
 import {FeaturesPage, PricingPage, ResourcesPage, SolutionsPage} from '../pages/Landing/index.js';
@@ -8,6 +8,7 @@ import { MinutesDetailPage, MinutesListPage } from '../pages/Minutes';
 import { AccountSettingsPage } from '../pages/Settings';
 import { CreateMeetingPage, MeetingDetailPage, MeetingsDashboardPage } from '../pages/Management';
 import { DashboardPage } from '../pages/Dashboard';
+import { LoadingPage, NotFoundPage } from '../pages/System';
 import { isAuthenticated } from '../utils/auth';
 
 const RequireAuth = ({ children }) => {
@@ -59,7 +60,7 @@ const AppRoutes = () => {
         <Route path="/solutions" element={<SolutionsPage/>}/>
         <Route path="/pricing" element={<PricingPage/>}/>
         <Route path="/resources" element={<ResourcesPage/>}/>
-        <Route path="*" element={<Navigate to="/" replace/>}/>
+        <Route path="/loading" element={<LoadingPage />} />
 
         {/*Meeting */}
         <Route element={<MainLayout/>}>
@@ -68,6 +69,14 @@ const AppRoutes = () => {
             element={(
               <RequireAuth>
                 <JoinMeetingPage />
+              </RequireAuth>
+            )}
+          />
+          <Route
+            path="/join/denied"
+            element={(
+              <RequireAuth>
+                <JoinRequestDeniedPage />
               </RequireAuth>
             )}
           />
@@ -91,6 +100,8 @@ const AppRoutes = () => {
           <Route path="/meetings/:id" element={<MeetingDetailPage />} />
           <Route path="/settings" element={<AccountSettingsPage />} />
         </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
 
       </Routes>
     </BrowserRouter>

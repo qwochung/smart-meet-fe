@@ -1,7 +1,7 @@
-import {Button, Card, Input} from "../../components/common";
-import {useState} from "react";
+import { Button, Card, Input } from "../../components/common";
+import { useState } from "react";
 import api from "../../api";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
   Clock3,
@@ -10,7 +10,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import {getStoredUser} from "../../utils/auth.js";
+import { getStoredUser } from "../../utils/auth.js";
 
 function Toggle({ enabled, onToggle }) {
   return (
@@ -251,7 +251,7 @@ export default function CreateMeetingPage() {
               type="submit"
               className="bg-sky-500 px-6 hover:bg-sky-600 focus:ring-sky-500"
             >
-              Lên lịch cuộc họp
+              Tạo cuộc họp
             </Button>
           </div>
         </form>
