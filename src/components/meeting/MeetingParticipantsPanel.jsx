@@ -148,10 +148,10 @@ export default function MeetingParticipantsPanel({
 
                   {/* Nút thao tác: Từ chối & Chấp nhận */}
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => onReject(user.id)} style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.1)", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                    <button onClick={() => onReject(user.userId ?? user.id)} style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.1)", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                       <X size={16} />
                     </button>
-                    <button onClick={() => onAccept(user.id)} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgb(59, 130, 246)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                    <button onClick={() => onAccept(user.userId ?? user.id)} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgb(59, 130, 246)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                       <Check size={16} />
                     </button>
                   </div>
@@ -288,9 +288,11 @@ export default function MeetingParticipantsPanel({
                       color: "rgba(255,255,255,0.56)",
                     }}
                   >
-                    {participant.self
+                    {participant.isHost
                       ? "Chủ phòng"
-                      : participant.isMuted
+                      : participant.self
+                        ? "Trong cuộc họp"
+                        : participant.isMuted
                         ? "Đã tắt mic"
                         : "Trong cuộc họp"}
                   </div>

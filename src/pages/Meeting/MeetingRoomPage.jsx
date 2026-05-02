@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {Navigate, useLocation, useNavigate, useParams} from "react-router-dom";
-import { Client } from "@stomp/stompjs";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { getStoredUser } from "../../utils/auth.js";
 import api from "../../api";
 import {
@@ -11,25 +10,50 @@ import {
   MeetingRoomHeader,
   ParticipantTile,
 } from "../../components/meeting";
+import { useLiveKitRoom } from "../../hooks/useLiveKitRoom.js";
+import { useWebSocket } from "../../hooks/useWebSocket.js";
 import { LoadingPage } from "../System";
 import {
+  createInitialMessages,
   formatElapsedTime,
   getParticipantGridStyle,
   getRoomData,
-  initialMessages,
   normalizeRoomParticipants,
 } from "./meetingRoomUtils.js";
-
-const WS_HOST = import.meta.env.VITE_WS_HOST;
+import { roomSessionStorage } from "../../services/roomService.js";
 
 export default function MeetingRoomPage() {
+  const currentUser = getStoredUser();
+  if (!currentUser) {
+    return <Navigate to="/auth/login" replace />;
+  }
 
   const navigate = useNavigate();
   const location = useLocation();
   const { roomCode } = useParams();
+  const persistedSession = useMemo(
+    () => roomSessionStorage.get(roomCode),
+    [roomCode],
+  );
+  const activeSession = location.state || persistedSession || {};
+  const sessionRole = activeSession?.role;
+  const isCreatorEntry = sessionRole === "HOST" || activeSession?.created === true;
+  const livekitUrl = activeSession?.livekitHost || activeSession?.livekitUrl || "";
+  const livekitToken = activeSession?.livekitToken || activeSession?.token || "";
+  const hasLiveKitSession = Boolean(livekitUrl && livekitToken);
+
+  const {
+    participants: livekitParticipants,
+    connectionState: livekitConnectionState,
+    connect: connectLiveKit,
+    disconnect: disconnectLiveKit,
+    toggleMicrophone: toggleLiveKitMicrophone,
+    toggleCamera: toggleLiveKitCamera,
+  } = useLiveKitRoom();
 
   const initialJoinSettings = location.state?.joinSettings;
   const isApproved = location.state?.approved;
+  const isParticipantAllowed = location.state?.pending === false || isApproved;
 
   const [chatOpen, setChatOpen] = useState(true);
   const [micActive, setMicActive] = useState(
@@ -40,7 +64,9 @@ export default function MeetingRoomPage() {
   );
   const [mediaLoading, setMediaLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState(() =>
+    createInitialMessages(sessionRole === "HOST"),
+  );
   const [elapsed, setElapsed] = useState(0);
   const [roomInfo, setRoomInfo] = useState(null);
   const [roomParticipants, setRoomParticipants] = useState([]);
@@ -56,15 +82,116 @@ export default function MeetingRoomPage() {
   const [canEnterRoom, setCanEnterRoom] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [pendingParticipants, setPendingParticipants] = useState([]);
-  const stompClientRef = useRef(null);
+
+  // Debug logging
+  useEffect(() => {
+    console.log("MeetingRoomPage Debug:", {
+      hasLiveKitSession,
+      livekitUrl: livekitUrl ? "✓ Present" : "✗ Missing",
+      livekitToken: livekitToken ? "✓ Present" : "✗ Missing",
+      activeSession: Object.keys(activeSession),
+      livekitConnectionState,
+      isHost,
+    });
+  }, [hasLiveKitSession, livekitUrl, livekitToken, livekitConnectionState, isHost]);
+
+  // WebSocket for HOST: subscribe to host-events
+  const { connectionState: hostWsState } = useWebSocket({
+    roomCode,
+    role: "HOST",
+    userId: currentUser?.id,
+    enabled: isHost && Boolean(roomCode && currentUser?.id),
+    onMessage: (message) => {
+      console.log("Host WS message:", message);
+      if (message.type === "JOIN_REQUEST") {
+        const pendingUserId = message.data?.userId ?? message.userId;
+        setPendingParticipants((prev) => {
+          const isAlreadyPending = prev.some((p) => p.id === pendingUserId);
+          if (isAlreadyPending) return prev;
+
+          return [
+            ...prev,
+            {
+              id: pendingUserId,
+              userId: pendingUserId,
+              name: message.data?.userName ?? message.userName ?? "Người dùng",
+              email: message.data?.email ?? message.email ?? "",
+              avatar: message.data?.avatar ?? message.avatar ?? null,
+            },
+          ];
+        });
+      }
+    },
+  });
+
+  // WebSocket for PARTICIPANT: subscribe to participant channel
+  const isWaitingApproval = !isApproved && !isCreatorEntry && isParticipantAllowed === false;
+  const { connectionState: participantWsState } = useWebSocket({
+    roomCode,
+    userId: currentUser?.id,
+    role: "PARTICIPANT",
+    enabled: isWaitingApproval && Boolean(roomCode && currentUser?.id),
+    onMessage: (message) => {
+      console.log("Participant WS message:", message);
+      if (message.type === "JOIN_APPROVED") {
+        const nextSession = {
+          roomCode,
+          role: "PARTICIPANT",
+          pending: false,
+          approved: true,
+          livekitToken: message.livekitToken || message.token,
+          livekitHost: message.livekitHost || message.livekitUrl,
+        };
+        roomSessionStorage.set(nextSession);
+        navigate(`/room/${roomCode}`, {
+          replace: true,
+          state: nextSession,
+        });
+      }
+      if (message.type === "JOIN_REJECTED") {
+        roomSessionStorage.clear(roomCode);
+        navigate("/join/denied", {
+          replace: true,
+          state: { roomCode, reason: message.reason },
+        });
+      }
+    },
+  });
 
 
   const handleAcceptParticipant = (userId) => {
-    api.room.acceptJoinRequest(roomCode, userId)
+    if (userId == null || userId === "") {
+      console.error("Accept join request failed: missing userId");
+      return;
+    }
+
+    const acceptedParticipant = pendingParticipants.find((participant) => String(participant.userId ?? participant.id) === String(userId));
+
+    api.room.acceptJoinRequest(roomCode, { userId })
       .then(r => console.log("Accept join request success"))
       .catch(e => console.error("Accept join request failed:", e));
 
     setPendingParticipants(prev => prev.filter(p => p.id !== userId));
+
+    if (acceptedParticipant) {
+      setRoomParticipants((prev) => {
+        const alreadyInRoom = prev.some((participant) => String(participant.id) === String(userId));
+        if (alreadyInRoom) {
+          return prev;
+        }
+
+        return [
+          ...prev,
+          {
+            id: acceptedParticipant.userId ?? acceptedParticipant.id,
+            name: acceptedParticipant.name || "Người dùng",
+            avatar: acceptedParticipant.avatar || null,
+            hasVideo: false,
+            isMuted: true,
+          },
+        ];
+      });
+    }
   };
 
   const handleRejectParticipant = (userId) => {
@@ -73,29 +200,23 @@ export default function MeetingRoomPage() {
     setPendingParticipants(prev => prev.filter(p => p.id !== userId));
   };
 
-  const currentUser = getStoredUser();
-  if (!currentUser) {
-    return <Navigate to="/auth/login" replace />;
-  }
-
   // Fetch room info and participants, determine if current user is host
   useEffect(() => {
     if (!roomCode) return;
     let cancelled = false;
     const fetchRoom = async () => {
       try {
-        const roomData = await api.room.getRoomByCode(roomCode);
+        const roomResponse = await api.room.getRoomByCode(roomCode);
+        const roomData = getRoomData(roomResponse);
         if (cancelled) return;
 
-        if (roomData?.hostUser?.id === currentUser?.id) {
-          setIsHost(true);
-          setRoomInfo(roomData);
-          setRoomParticipants(
-            normalizeRoomParticipants(roomData, currentUser?.id),
-          );
-        } else {
-          setIsHost(false);
-        }
+        const userIsHost = isCreatorEntry || roomData?.hostUser?.id === currentUser?.id;
+
+        setIsHost(userIsHost);
+        setRoomInfo(roomData);
+        setRoomParticipants(
+          normalizeRoomParticipants(roomData, currentUser?.id),
+        );
 
       } catch (error) {
         console.error("Không lấy được thông tin phòng:", error);
@@ -109,74 +230,53 @@ export default function MeetingRoomPage() {
     return () => {
       cancelled = true;
     };
-  }, [roomCode, currentUser?.id]);
+  }, [roomCode, currentUser?.id, isCreatorEntry]);
 
-  //
+
+
   useEffect(() => {
-    if (!roomCode || !isHost || !currentUser?.id || !WS_HOST) return;
+    if (!hasLiveKitSession || !roomCode || !currentUser?.id) {
+      return undefined;
+    }
 
-    console.log("Connecting to WebSocket for room:", roomCode);
-    const stompClient = new Client({
-      brokerURL: `${WS_HOST}/meet`,
-      onConnect: () => {
-        stompClient.subscribe(`/topic/room/${roomCode}/host-events`, (msg) => {
-          try {
-            const requestData = JSON.parse(msg.body || "{}");
-            console.log("Host event:", requestData);
+    let cancelled = false;
 
-            if (requestData.type === "JOIN_REQUEST") {
-              setPendingParticipants((prev) => {
-
-                // 1. Kiểm tra xem user đã có trong danh sách chờ chưa (tránh render trùng nếu spam)
-                const isAlreadyPending = prev.some((p) => p.id === requestData.userId);
-                if (isAlreadyPending) return prev;
-
-                // 2. Format lại data cho khớp với UI (userId -> id, userName -> name)
-                const newPendingUser = {
-                  id: requestData.actorId,
-                  name: requestData.userName,
-                  avatar: requestData.avatar
-                };
-
-                // 3. Thêm user mới vào cuối danh sách hiện tại
-                const updated = [...prev, newPendingUser];
-
-                // console.log("Updated pendingParticipants:", updated);
-
-                return updated;
-                })
-            }
-          } catch (error) {
-            console.error("Parse host-events failed:", error);
-          }
+    const connectRoom = async () => {
+      try {
+        await connectLiveKit({
+          url: livekitUrl,
+          token: livekitToken,
+          autoAudio: initialJoinSettings?.micOn ?? true,
+          autoVideo: initialJoinSettings?.camOn ?? true,
         });
-        console.log("WebSocket connected");
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Không thể kết nối LiveKit:", error);
+        }
+      }
+    };
 
-        stompClient.publish({
-          destination: `/app/room/${roomCode}/join`,
-          body: JSON.stringify({
-            userId: currentUser.id,
-            role: isHost? "HOST" : "PARTICIPANT" }),
-        });
-      },
-      onStompError: (error) => {
-        console.error("WebSocket error:", error);
-      },
-    });
-
-    stompClient.activate();
-    stompClientRef.current = stompClient;
+    connectRoom();
 
     return () => {
-      stompClient.deactivate()
-        .then(r => console.log("WebSocket disconnected:", r))
-        .catch(e => console.error("WebSocket disconnect error:", e));
+      cancelled = true;
+      disconnectLiveKit();
     };
-  }, [roomCode, currentUser?.id, isHost]);
+  }, [
+    hasLiveKitSession,
+    roomCode,
+    currentUser?.id,
+    livekitUrl,
+    livekitToken,
+    initialJoinSettings?.micOn,
+    initialJoinSettings?.camOn,
+    connectLiveKit,
+    disconnectLiveKit,
+  ]);
 
   // Access camera mic
   useEffect(() => {
-    if (!currentUser || !isHost) return;
+    if (!currentUser || !isHost || hasLiveKitSession) return;
     const openInitialMedia = async () => {
       if (!micActive && !videoActive) return;
 
@@ -320,17 +420,41 @@ export default function MeetingRoomPage() {
   const roomJoinLink = `${window.location.origin}/join?roomCode=${roomCode}`;
 
   const gridParticipants = useMemo(() => {
+    if (!currentUser?.id) {
+      return [];
+    }
+
     const selfTile = {
-      id: currentUser?.id || "self",
-      name: `${currentUser?.name || "Bạn"}`,
+      id: currentUser.id,
+      email: currentUser.email,
+      name: currentUser.name || "Bạn",
       hasVideo: videoActive,
       isMuted: !micActive,
       self: true,
+      isHost,
       active: micActive,
       stream: localStreamRef.current,
     };
 
-    return [selfTile, ...roomParticipants];
+    const allParticipants = [selfTile, ...(Array.isArray(roomParticipants) ? roomParticipants : [])];
+
+    if (allParticipants.length === 0) {
+      return [selfTile]; // Ensure at least self is always present
+    }
+
+    return allParticipants
+      .map((participant, index) => ({
+        ...participant,
+        sortOrder: index,
+      }))
+      .sort((a, b) => {
+        if (a.isHost !== b.isHost) {
+          return a.isHost ? -1 : 1;
+        }
+
+        return a.sortOrder - b.sortOrder;
+      })
+      .map(({ sortOrder, ...participant }) => participant);
   }, [
     currentUser?.id,
     currentUser?.name,
@@ -338,10 +462,63 @@ export default function MeetingRoomPage() {
     micActive,
     videoActive,
     localStreamVersion,
+    isHost,
   ]);
 
-  const participantCount = pendingParticipants.length;
-  const visibleParticipants = gridParticipants.filter((participant) => {
+  const displayedParticipants = useMemo(() => {
+    const gridList = Array.isArray(gridParticipants) ? gridParticipants : [];
+
+    if (!hasLiveKitSession) {
+      return gridList;
+    }
+
+    const livekitList = Array.isArray(livekitParticipants)
+      ? livekitParticipants
+      : [];
+
+    if (livekitList.length === 0) {
+      return gridList;
+    }
+
+    const getUniqueKeys = (p) => {
+      return [p?.id, p?.identity, p?.email, p?.userId]
+        .filter(Boolean)
+        .map(k => String(k).trim().toLowerCase());
+    };
+
+    const enrichedLivekitList = livekitList.map(lkp => {
+      const lkKeys = getUniqueKeys(lkp);
+      const match = gridList.find(gp => {
+        if (gp.self && lkp.self) return true;
+        const gpKeys = getUniqueKeys(gp);
+        return gpKeys.some(k => lkKeys.includes(k));
+      });
+
+      if (match) {
+        return {
+          ...lkp,
+          name: match.name || lkp.name,
+          avatar: match.avatar || lkp.avatar,
+          isHost: match.isHost !== undefined ? match.isHost : lkp.isHost,
+        };
+      }
+      return lkp;
+    });
+
+    const missingFromLivekit = gridList.filter(gp => {
+      if (gp.self && livekitList.some(lp => lp.self)) return false;
+      const gpKeys = getUniqueKeys(gp);
+      return !livekitList.some(lkp => {
+        const lkKeys = getUniqueKeys(lkp);
+        return gpKeys.some(k => lkKeys.includes(k));
+      });
+    });
+
+    // Keep LiveKit tiles first (for active streams), then append API/grid-only members.
+    return [...enrichedLivekitList, ...missingFromLivekit];
+  }, [hasLiveKitSession, livekitParticipants, gridParticipants]);
+
+  const visibleParticipants = displayedParticipants.filter((participant) => {
     const searchValue = participantQuery.trim().toLowerCase();
     if (!searchValue) return true;
 
@@ -349,7 +526,37 @@ export default function MeetingRoomPage() {
       .toLowerCase()
       .includes(searchValue);
   });
-  const contributorCount = visibleParticipants.length;
+  // Ensure participant count is always at least 1 (self) and is an array length
+  const participantCount = Math.max(1, Array.isArray(displayedParticipants) ? displayedParticipants.length : 0);
+  const contributorCount = visibleParticipants.length || 1;
+
+  const handleToggleMic = async () => {
+    if (hasLiveKitSession) {
+      try {
+        await toggleLiveKitMicrophone();
+        setMicActive((prev) => !prev);
+      } catch (error) {
+        console.error("Toggle LiveKit mic failed:", error);
+      }
+      return;
+    }
+
+    await toggleMic();
+  };
+
+  const handleToggleVideo = async () => {
+    if (hasLiveKitSession) {
+      try {
+        await toggleLiveKitCamera();
+        setVideoActive((prev) => !prev);
+      } catch (error) {
+        console.error("Toggle LiveKit camera failed:", error);
+      }
+      return;
+    }
+
+    await toggleVideo();
+  };
 
   const toggleChatPanel = () => {
     setChatOpen((isOpen) => {
@@ -415,7 +622,7 @@ export default function MeetingRoomPage() {
       />
     );
   }
-  if (!isHost && !isApproved) {
+  if (!isHost && !isParticipantAllowed) {
     return <Navigate to={`/join?roomCode=${roomCode}`} replace />;
   }
   return (
@@ -476,7 +683,7 @@ export default function MeetingRoomPage() {
               ...gridStyle,
             }}
           >
-            {gridParticipants.map((participant) => (
+            {displayedParticipants.map((participant) => (
               <ParticipantTile key={participant.id} participant={participant} />
             ))}
           </div>
@@ -511,9 +718,9 @@ export default function MeetingRoomPage() {
           roomCode={roomCode}
           micActive={micActive}
           videoActive={videoActive}
-          mediaLoading={mediaLoading}
-          onToggleMic={toggleMic}
-          onToggleVideo={toggleVideo}
+          mediaLoading={mediaLoading || livekitConnectionState === "connecting"}
+          onToggleMic={handleToggleMic}
+          onToggleVideo={handleToggleVideo}
           onToggleParticipants={toggleParticipantsPanel}
           onLeave={() => navigate(`/room/${roomCode}/summary`)}
         />

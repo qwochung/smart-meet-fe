@@ -26,7 +26,7 @@ const transcriptSnippets = [
 ];
 
 export default function MeetingSummaryPage() {
-  const { roomId = 'product-sync' } = useParams();
+  const { roomCode = 'product-sync' } = useParams();
 
   return (
     <div className="min-h-full bg-slate-50 px-4 py-6 text-slate-900 md:px-10 lg:px-16">
@@ -35,7 +35,7 @@ export default function MeetingSummaryPage() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary-600">Cuộc họp đã kết thúc</p>
-              <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-slate-900">Đồng bộ hằng tuần: {roomId.replace(/-/g, ' ')}</h1>
+              <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-slate-900">Đồng bộ hằng tuần: {roomCode.replace(/-/g, ' ')}</h1>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
                 Cuộc họp đã kết thúc. Xem lại tóm tắt AI, công việc theo dõi và bản ghi trước khi chia sẻ cho đội ngũ.
               </p>
@@ -133,7 +133,7 @@ export default function MeetingSummaryPage() {
                     <p className="mt-1 text-slate-600">Điểm danh, thời điểm vào phòng và hoạt động phòng họp đã được ghi lại.</p>
                   </div>
                 </div>
-                <Link to={`/room/${roomId}`} className="inline-flex w-full">
+                <Link to={`/room/${roomCode}`} className="inline-flex w-full">
                   <Button variant="outline" fullWidth className="border-slate-300 text-slate-700 hover:bg-slate-100" icon={FileText}>
                     Mở lại bối cảnh phòng họp
                   </Button>

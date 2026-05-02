@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, VerifyEmailPage } from '../pages/Auth';
-import {JoinMeetingPage, JoinRequestDeniedPage, MeetingEndedPage, MeetingRoomPage} from "../pages/Meeting/index.js";
+import {CreateRoomPage, JoinRequestDeniedPage, JoinRoomPage, MeetingEndedPage, MeetingRoomPage, WaitingRoomPage} from "../pages/Meeting/index.js";
 import {AppLayout, MainLayout} from "../layouts/index.js";
 import {HomePage} from '../pages/Home';
 import {FeaturesPage, PricingPage, ResourcesPage, SolutionsPage} from '../pages/Landing/index.js';
@@ -63,12 +63,23 @@ const AppRoutes = () => {
         <Route path="/loading" element={<LoadingPage />} />
 
         {/*Meeting */}
-        <Route element={<MainLayout/>}>
+        <Route element={<AppLayout/>}>
           <Route
             path="/join"
             element={(
               <RequireAuth>
-                <JoinMeetingPage />
+                <JoinRoomPage />
+              </RequireAuth>
+            )}
+          />
+        </Route>
+
+        <Route element={<MainLayout/>}>
+          <Route
+            path="/rooms/create"
+            element={(
+              <RequireAuth>
+                <CreateRoomPage />
               </RequireAuth>
             )}
           />
@@ -77,6 +88,14 @@ const AppRoutes = () => {
             element={(
               <RequireAuth>
                 <JoinRequestDeniedPage />
+              </RequireAuth>
+            )}
+          />
+          <Route
+            path="/room/:roomCode/waiting"
+            element={(
+              <RequireAuth>
+                <WaitingRoomPage />
               </RequireAuth>
             )}
           />
@@ -96,7 +115,7 @@ const AppRoutes = () => {
           <Route path="/minutes" element={<MinutesListPage />} />
           <Route path="/minutes/:id" element={<MinutesDetailPage />} />
           <Route path="/meetings" element={<MeetingsDashboardPage />} />
-          <Route path="/meetings/new" element={<CreateMeetingPage />} />
+          <Route path="/meetings/new" element={<CreateRoomPage />} />
           <Route path="/meetings/:id" element={<MeetingDetailPage />} />
           <Route path="/settings" element={<AccountSettingsPage />} />
         </Route>
