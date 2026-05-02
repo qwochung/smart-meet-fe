@@ -26,37 +26,35 @@ export default function ParticipantTile({ participant }) {
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (!videoRef.current) return;
+    const el = videoRef.current;
+    if (!el) return;
     
     // Use LiveKit track attach if available (most reliable)
     if (participant.videoTrack) {
-      const el = videoRef.current;
       participant.videoTrack.attach(el);
       return () => {
-        participant.videoTrack.detach(el);
+        try { participant.videoTrack.detach(el); } catch {}
       };
     } 
     // Fallback to MediaStream if not a LiveKit track
     else if (participant.stream && participant.hasVideo) {
-      videoRef.current.srcObject = participant.stream;
-      videoRef.current.play().catch(() => {});
+      el.srcObject = participant.stream;
+      el.play().catch(() => {});
     } else {
-      videoRef.current.srcObject = null;
+      el.srcObject = null;
     }
-  }, [participant.stream, participant.videoTrack, participant.hasVideo]);
+  }, [participant.stream, participant.videoTrack?.sid, participant.hasVideo]);
 
   const audioRef = useRef(null);
   useEffect(() => {
-    if (!audioRef.current || participant.self) return;
+    const el = audioRef.current;
+    if (!el || participant.self || !participant.audioTrack) return;
     
-    if (participant.audioTrack) {
-      const el = audioRef.current;
-      participant.audioTrack.attach(el);
-      return () => {
-        participant.audioTrack.detach(el);
-      };
-    }
-  }, [participant.audioTrack, participant.self]);
+    participant.audioTrack.attach(el);
+    return () => {
+      try { participant.audioTrack.detach(el); } catch {}
+    };
+  }, [participant.audioTrack?.sid, participant.self]);
 
   return (
     <div

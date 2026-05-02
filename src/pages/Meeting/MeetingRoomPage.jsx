@@ -76,8 +76,6 @@ export default function MeetingRoomPage() {
   const [copied, setCopied] = useState(false);
   const [participantQuery, setParticipantQuery] = useState("");
   const messagesEndRef = useRef(null);
-  const localStreamRef = useRef(new MediaStream());
-  const [localStreamVersion, setLocalStreamVersion] = useState(0);
   const [isHost, setIsHost] = useState(false);
   const [canEnterRoom, setCanEnterRoom] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
@@ -134,13 +132,14 @@ export default function MeetingRoomPage() {
     onMessage: (message) => {
       console.log("Participant WS message:", message);
       if (message.type === "JOIN_APPROVED") {
+        const data = message.data || message;
         const nextSession = {
           roomCode,
           role: "PARTICIPANT",
           pending: false,
           approved: true,
-          livekitToken: message.livekitToken || message.token,
-          livekitHost: message.livekitHost || message.livekitUrl,
+          livekitToken: data.livekitToken || data.token,
+          livekitHost: data.livekitHost || data.livekitUrl,
         };
         roomSessionStorage.set(nextSession);
         navigate(`/room/${roomCode}`, {
@@ -149,10 +148,11 @@ export default function MeetingRoomPage() {
         });
       }
       if (message.type === "JOIN_REJECTED") {
+        const data = message.data || message;
         roomSessionStorage.clear(roomCode);
         navigate("/join/denied", {
           replace: true,
-          state: { roomCode, reason: message.reason },
+          state: { roomCode, reason: data.reason },
         });
       }
     },
@@ -165,38 +165,25 @@ export default function MeetingRoomPage() {
       return;
     }
 
-    const acceptedParticipant = pendingParticipants.find((participant) => String(participant.userId ?? participant.id) === String(userId));
-
-    api.room.acceptJoinRequest(roomCode, { userId })
-      .then(r => console.log("Accept join request success"))
-      .catch(e => console.error("Accept join request failed:", e));
-
     setPendingParticipants(prev => prev.filter(p => p.id !== userId));
 
-    if (acceptedParticipant) {
-      setRoomParticipants((prev) => {
-        const alreadyInRoom = prev.some((participant) => String(participant.id) === String(userId));
-        if (alreadyInRoom) {
-          return prev;
-        }
-
-        return [
-          ...prev,
-          {
-            id: acceptedParticipant.userId ?? acceptedParticipant.id,
-            name: acceptedParticipant.name || "Người dùng",
-            avatar: acceptedParticipant.avatar || null,
-            hasVideo: false,
-            isMuted: true,
-          },
-        ];
-      });
-    }
+    api.room.acceptJoinRequest(roomCode, { userId })
+      .then(r => {
+        console.log("Accept join request success");
+        // Refetch room data to ensure we have the participant's full details (like email)
+        // This is necessary because the LiveKit token might use email as identity,
+        // and we need the email in roomParticipants to properly merge and avoid duplicates.
+        api.room.getRoomByCode(roomCode)
+          .then(roomResponse => {
+            const roomData = getRoomData(roomResponse);
+            setRoomParticipants(normalizeRoomParticipants(roomData, currentUser));
+          })
+          .catch(err => console.error("Refetch room data failed:", err));
+      })
+      .catch(e => console.error("Accept join request failed:", e));
   };
 
   const handleRejectParticipant = (userId) => {
-    // Gửi sự kiện qua websocket: từ chối user join
-    // stompClient.publish({ destination: `/app/room/${roomCode}/reject`, body: JSON.stringify({ userId }) });
     setPendingParticipants(prev => prev.filter(p => p.id !== userId));
   };
 
@@ -215,7 +202,7 @@ export default function MeetingRoomPage() {
         setIsHost(userIsHost);
         setRoomInfo(roomData);
         setRoomParticipants(
-          normalizeRoomParticipants(roomData, currentUser?.id),
+          normalizeRoomParticipants(roomData, currentUser),
         );
 
       } catch (error) {
@@ -274,35 +261,6 @@ export default function MeetingRoomPage() {
     disconnectLiveKit,
   ]);
 
-  // Access camera mic
-  useEffect(() => {
-    if (!currentUser || !isHost || hasLiveKitSession) return;
-    const openInitialMedia = async () => {
-      if (!micActive && !videoActive) return;
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: micActive,
-          video: videoActive,
-        });
-
-        localStreamRef.current = new MediaStream(stream.getTracks());
-        setLocalStreamVersion((value) => value + 1);
-      } catch (error) {
-        console.error("Không thể mở media ban đầu:", error);
-        setMicActive(false);
-        setVideoActive(false);
-      }
-    };
-
-    openInitialMedia();
-
-    return () => {
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
-      localStreamRef.current = new MediaStream();
-    };
-  }, []);
-
   useEffect(() => {
     const t = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(t);
@@ -311,89 +269,6 @@ export default function MeetingRoomPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const replaceTrack = (track) => {
-    const stream = localStreamRef.current;
-    const oldTracks = stream
-      .getTracks()
-      .filter((item) => item.kind === track.kind);
-    oldTracks.forEach((item) => {
-      stream.removeTrack(item);
-      item.stop();
-    });
-    stream.addTrack(track);
-    setLocalStreamVersion((value) => value + 1);
-  };
-
-  const removeTrackByKind = (kind) => {
-    const stream = localStreamRef.current;
-    const targets = stream.getTracks().filter((track) => track.kind === kind);
-    targets.forEach((track) => {
-      stream.removeTrack(track);
-      track.stop();
-    });
-    setLocalStreamVersion((value) => value + 1);
-  };
-
-  const toggleMic = async () => {
-    if (mediaLoading) return;
-
-    setMediaLoading(true);
-    try {
-      if (micActive) {
-        removeTrackByKind("audio");
-        setMicActive(false);
-      } else {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-        const audioTrack = stream.getAudioTracks()[0];
-        if (!audioTrack) return;
-
-        replaceTrack(audioTrack);
-        setMicActive(true);
-
-        stream
-          .getTracks()
-          .filter((track) => track.id !== audioTrack.id)
-          .forEach((track) => track.stop());
-      }
-    } catch (error) {
-      console.error("Toggle mic failed:", error);
-    } finally {
-      setMediaLoading(false);
-    }
-  };
-
-  const toggleVideo = async () => {
-    if (mediaLoading) return;
-
-    setMediaLoading(true);
-    try {
-      if (videoActive) {
-        removeTrackByKind("video");
-        setVideoActive(false);
-      } else {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
-        const videoTrack = stream.getVideoTracks()[0];
-        if (!videoTrack) return;
-
-        replaceTrack(videoTrack);
-        setVideoActive(true);
-
-        stream
-          .getTracks()
-          .filter((track) => track.id !== videoTrack.id)
-          .forEach((track) => track.stop());
-      }
-    } catch (error) {
-      console.error("Toggle camera failed:", error);
-    } finally {
-      setMediaLoading(false);
-    }
-  };
 
   const sendMessage = () => {
     if (!message.trim()) return;
@@ -424,16 +299,22 @@ export default function MeetingRoomPage() {
       return [];
     }
 
+    const localLivekitParticipant = hasLiveKitSession 
+      ? livekitParticipants?.find(p => p.self) 
+      : null;
+
     const selfTile = {
       id: currentUser.id,
       email: currentUser.email,
       name: currentUser.name || "Bạn",
-      hasVideo: videoActive,
-      isMuted: !micActive,
+      hasVideo: localLivekitParticipant?.hasVideo ?? videoActive,
+      isMuted: localLivekitParticipant?.isMuted ?? !micActive,
       self: true,
       isHost,
       active: micActive,
-      stream: localStreamRef.current,
+      videoTrack: localLivekitParticipant?.videoTrack ?? null,
+      audioTrack: localLivekitParticipant?.audioTrack ?? null,
+      stream: localLivekitParticipant?.stream ?? null,
     };
 
     const allParticipants = [selfTile, ...(Array.isArray(roomParticipants) ? roomParticipants : [])];
@@ -458,11 +339,13 @@ export default function MeetingRoomPage() {
   }, [
     currentUser?.id,
     currentUser?.name,
+    currentUser?.email,
     roomParticipants,
     micActive,
     videoActive,
-    localStreamVersion,
     isHost,
+    hasLiveKitSession,
+    livekitParticipants,
   ]);
 
   const displayedParticipants = useMemo(() => {
@@ -531,31 +414,23 @@ export default function MeetingRoomPage() {
   const contributorCount = visibleParticipants.length || 1;
 
   const handleToggleMic = async () => {
-    if (hasLiveKitSession) {
-      try {
-        await toggleLiveKitMicrophone();
-        setMicActive((prev) => !prev);
-      } catch (error) {
-        console.error("Toggle LiveKit mic failed:", error);
-      }
-      return;
+    if (!hasLiveKitSession) return;
+    try {
+      await toggleLiveKitMicrophone();
+      setMicActive((prev) => !prev);
+    } catch (error) {
+      console.error("Toggle LiveKit mic failed:", error);
     }
-
-    await toggleMic();
   };
 
   const handleToggleVideo = async () => {
-    if (hasLiveKitSession) {
-      try {
-        await toggleLiveKitCamera();
-        setVideoActive((prev) => !prev);
-      } catch (error) {
-        console.error("Toggle LiveKit camera failed:", error);
-      }
-      return;
+    if (!hasLiveKitSession) return;
+    try {
+      await toggleLiveKitCamera();
+      setVideoActive((prev) => !prev);
+    } catch (error) {
+      console.error("Toggle LiveKit camera failed:", error);
     }
-
-    await toggleVideo();
   };
 
   const toggleChatPanel = () => {

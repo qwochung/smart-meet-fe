@@ -38,14 +38,15 @@ export default function WaitingRoomPage() {
     enabled: Boolean(roomCode && currentUser?.id),
     onMessage: (message) => {
       if (message.type === 'JOIN_APPROVED') {
+        const data = message.data || message;
         const nextSession = {
           ...roomSessionStorage.get(roomCode),
           roomCode,
           role: 'PARTICIPANT',
           pending: false,
           approved: true,
-          livekitToken: message.livekitToken || message.token,
-          livekitHost: message.livekitHost || message.livekitUrl,
+          livekitToken: data.livekitToken || data.token,
+          livekitHost: data.livekitHost || data.livekitUrl,
         };
 
         roomSessionStorage.set(nextSession);
@@ -56,12 +57,14 @@ export default function WaitingRoomPage() {
       }
 
       if (message.type === 'JOIN_REJECTED') {
+        const data = message.data || message;
         roomSessionStorage.clear(roomCode);
         navigate('/join/denied', {
           replace: true,
           state: {
             roomCode,
             roomName: session?.roomName,
+            reason: data.reason,
           },
         });
       }
