@@ -24,8 +24,11 @@ const getRoomHostKey = (roomData = {}) =>
     roomData?.hostUser || roomData?.host || roomData?.owner,
   );
 
-export const normalizeRoomParticipants = (roomData = {}, selfId = "") => {
+export const normalizeRoomParticipants = (roomData = {}, currentUser = {}) => {
   const hostKey = getRoomHostKey(roomData);
+  const selfId = currentUser?.id;
+  const selfEmail = currentUser?.email;
+  
   const source = [
     roomData?.hostUser,
     roomData?.host,
@@ -51,8 +54,14 @@ export const normalizeRoomParticipants = (roomData = {}, selfId = "") => {
       };
     })
     .filter((participant, index, participants) => {
-      const sameAsSelf = String(participant.id) === String(selfId);
-      if (sameAsSelf) {
+      const pId = String(participant.id).trim().toLowerCase();
+      const pEmail = String(participant.email || participant.id).trim().toLowerCase();
+      
+      const isSelfId = Boolean(selfId) && pId === String(selfId).trim().toLowerCase();
+      const isSelfEmail = Boolean(selfEmail) && pEmail === String(selfEmail).trim().toLowerCase();
+      const isSelfEmailFromId = Boolean(selfEmail) && pId === String(selfEmail).trim().toLowerCase();
+
+      if (isSelfId || isSelfEmail || isSelfEmailFromId) {
         return false;
       }
 
