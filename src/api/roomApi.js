@@ -11,7 +11,11 @@ export const roomApi = {
     return await axiosClient.get(`/rooms/${roomCode}/available`);
   },
 
-  acceptJoinRequest: async (roomCode,data) => {
-    return await axiosClient.post(`/rooms/${roomCode}/user/accept`, data)
+  acceptJoinRequest: async (roomCode, data) => {
+    return await axiosClient.post(`/rooms/${roomCode}/join/accept`, data, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
 };

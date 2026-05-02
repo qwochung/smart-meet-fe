@@ -27,16 +27,36 @@ export default function ParticipantTile({ participant }) {
 
   useEffect(() => {
     if (!videoRef.current) return;
-    if (!participant.stream || !participant.hasVideo) {
+    
+    // Use LiveKit track attach if available (most reliable)
+    if (participant.videoTrack) {
+      const el = videoRef.current;
+      participant.videoTrack.attach(el);
+      return () => {
+        participant.videoTrack.detach(el);
+      };
+    } 
+    // Fallback to MediaStream if not a LiveKit track
+    else if (participant.stream && participant.hasVideo) {
+      videoRef.current.srcObject = participant.stream;
+      videoRef.current.play().catch(() => {});
+    } else {
       videoRef.current.srcObject = null;
-      return;
     }
+  }, [participant.stream, participant.videoTrack, participant.hasVideo]);
 
-    videoRef.current.srcObject = participant.stream;
-    videoRef.current.play().catch(() => {
-      // Browser can block autoplay in rare cases.
-    });
-  }, [participant.stream, participant.hasVideo]);
+  const audioRef = useRef(null);
+  useEffect(() => {
+    if (!audioRef.current || participant.self) return;
+    
+    if (participant.audioTrack) {
+      const el = audioRef.current;
+      participant.audioTrack.attach(el);
+      return () => {
+        participant.audioTrack.detach(el);
+      };
+    }
+  }, [participant.audioTrack, participant.self]);
 
   return (
     <div
@@ -52,7 +72,12 @@ export default function ParticipantTile({ participant }) {
         transition: "box-shadow 0.2s, transform 0.2s",
       }}
     >
-      {participant.hasVideo && participant.stream ? (
+      {/* Attach remote audio track */}
+      {!participant.self && (
+        <audio ref={audioRef} autoPlay />
+      )}
+
+      {participant.hasVideo ? (
         <video
           ref={videoRef}
           autoPlay
