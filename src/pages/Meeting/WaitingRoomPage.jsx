@@ -11,7 +11,7 @@ export default function WaitingRoomPage() {
   const { roomCode } = useParams();
   const currentUser = getStoredUser();
   const session = useMemo(() => location.state || roomSessionStorage.get(roomCode), [location.state, roomCode]);
-  const [status, setStatus] = useState('Waiting for host approval...');
+  const [status, setStatus] = useState('Đang chờ chủ phòng phê duyệt...');
 
   useEffect(() => {
     if (!currentUser) {
@@ -84,7 +84,7 @@ export default function WaitingRoomPage() {
       <WaitingScreen
         roomCode={roomCode}
         roomName={session?.roomName}
-        status={connectionState === 'connected' ? status : 'Connecting to approval channel...'}
+        status={connectionState === 'connected' ? status : 'Đang kết nối đến kênh phê duyệt...'}
       />
     </div>
   );
