@@ -26,6 +26,10 @@ import {
   normalizeRoomParticipants,
 } from "./meetingRoomUtils.js";
 import { roomSessionStorage } from "../../services/roomService.js";
+import {
+  ensureAudioUnlocked,
+  playNotificationBeep,
+} from "../../utils/notificationSound.js";
 
 export default function MeetingRoomPage() {
   const currentUser = getStoredUser();
@@ -87,6 +91,22 @@ export default function MeetingRoomPage() {
   const [isHost, setIsHost] = useState(isCreatorEntry);
   const [isChecking, setIsChecking] = useState(true);
   const [pendingParticipants, setPendingParticipants] = useState([]);
+  const prevRemoteParticipantKeysRef = useRef(new Set());
+
+  // Unlock audio on first user interaction (browser autoplay policy)
+  useEffect(() => {
+    const unlock = () => {
+      ensureAudioUnlocked();
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
 
   // ─── Sync mic/video state after LiveKit connects ────────────────────────────
   useEffect(() => {
@@ -105,6 +125,7 @@ export default function MeetingRoomPage() {
     enabled: (isHost || isCreatorEntry) && Boolean(roomCode && currentUser?.id),
     onMessage: (msg) => {
       if (msg.type === "JOIN_REQUEST") {
+        playNotificationBeep("join-request");
         console.log("HOST WS received:", msg);
         console.log("JOIN_REQUEST data:", msg.data);
         const pendingUserId = msg.data?.userId ?? msg.userId;
@@ -240,6 +261,37 @@ export default function MeetingRoomPage() {
     connectLiveKit,
     disconnectLiveKit,
   ]);
+
+  // Sound when a participant (re)appears in the room
+  useEffect(() => {
+    if (!hasLiveKitSession) return;
+    if (!Array.isArray(livekitParticipants)) return;
+
+    const getKey = (p) =>
+      String(p?.identity || p?.id || p?.email || p?.userId || "").trim().toLowerCase();
+
+    const currentRemoteKeys = new Set(
+      livekitParticipants
+        .filter((p) => !p?.self)
+        .map(getKey)
+        .filter(Boolean),
+    );
+
+    const prevKeys = prevRemoteParticipantKeysRef.current || new Set();
+    let hasNewRemote = false;
+    for (const key of currentRemoteKeys) {
+      if (!prevKeys.has(key)) {
+        hasNewRemote = true;
+        break;
+      }
+    }
+
+    if (hasNewRemote) {
+      playNotificationBeep("user-return");
+    }
+
+    prevRemoteParticipantKeysRef.current = currentRemoteKeys;
+  }, [hasLiveKitSession, livekitParticipants]);
 
   // Timer
   useEffect(() => {
