@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { getStoredUser } from "../../utils/auth.js";
 import api from "../../api";
 import {
@@ -37,9 +42,12 @@ export default function MeetingRoomPage() {
   );
   const activeSession = location.state || persistedSession || {};
   const sessionRole = activeSession?.role;
-  const isCreatorEntry = sessionRole === "HOST" || activeSession?.created === true;
-  const livekitUrl = activeSession?.livekitHost || activeSession?.livekitUrl || "";
-  const livekitToken = activeSession?.livekitToken || activeSession?.token || "";
+  const isCreatorEntry =
+    sessionRole === "HOST" || activeSession?.created === true;
+  const livekitUrl =
+    activeSession?.livekitHost || activeSession?.livekitUrl || "";
+  const livekitToken =
+    activeSession?.livekitToken || activeSession?.token || "";
   const hasLiveKitSession = Boolean(livekitUrl && livekitToken);
 
   const {
@@ -76,7 +84,7 @@ export default function MeetingRoomPage() {
   const [copied, setCopied] = useState(false);
   const [participantQuery, setParticipantQuery] = useState("");
   const messagesEndRef = useRef(null);
-  const [isHost, setIsHost] = useState(false);
+  const [isHost, setIsHost] = useState(isCreatorEntry);
   const [isChecking, setIsChecking] = useState(true);
   const [pendingParticipants, setPendingParticipants] = useState([]);
 
@@ -94,9 +102,11 @@ export default function MeetingRoomPage() {
     roomCode,
     role: "HOST",
     userId: currentUser?.id,
-    enabled: isHost && Boolean(roomCode && currentUser?.id),
+    enabled: (isHost || isCreatorEntry) && Boolean(roomCode && currentUser?.id),
     onMessage: (msg) => {
       if (msg.type === "JOIN_REQUEST") {
+        console.log("HOST WS received:", msg);
+        console.log("JOIN_REQUEST data:", msg.data);
         const pendingUserId = msg.data?.userId ?? msg.userId;
         setPendingParticipants((prev) => {
           if (prev.some((p) => p.id === pendingUserId)) return prev;
@@ -116,13 +126,15 @@ export default function MeetingRoomPage() {
   });
 
   // WebSocket for PARTICIPANT waiting approval
-  const isWaitingApproval = !isApproved && !isCreatorEntry && isParticipantAllowed === false;
+  const isWaitingApproval =
+    !isApproved && !isCreatorEntry && isParticipantAllowed === false;
   useWebSocket({
     roomCode,
     userId: currentUser?.id,
     role: "PARTICIPANT",
     enabled: isWaitingApproval && Boolean(roomCode && currentUser?.id),
     onMessage: (msg) => {
+      console.log("PARTICIPANT WS received:", msg);
       if (msg.type === "JOIN_APPROVED") {
         const data = msg.data || msg;
         const nextSession = {
@@ -150,12 +162,16 @@ export default function MeetingRoomPage() {
   const handleAcceptParticipant = (userId) => {
     if (userId == null || userId === "") return;
     setPendingParticipants((prev) => prev.filter((p) => p.id !== userId));
-    api.room.acceptJoinRequest(roomCode, { userId })
+    api.room
+      .acceptJoinRequest(roomCode, { userId: Number(userId) })
       .then(() => {
-        api.room.getRoomByCode(roomCode)
+        api.room
+          .getRoomByCode(roomCode)
           .then((roomResponse) => {
             const roomData = getRoomData(roomResponse);
-            setRoomParticipants(normalizeRoomParticipants(roomData, currentUser));
+            setRoomParticipants(
+              normalizeRoomParticipants(roomData, currentUser),
+            );
           })
           .catch((err) => console.error("Refetch room data failed:", err));
       })
@@ -175,7 +191,8 @@ export default function MeetingRoomPage() {
         const roomResponse = await api.room.getRoomByCode(roomCode);
         const roomData = getRoomData(roomResponse);
         if (cancelled) return;
-        const userIsHost = isCreatorEntry || roomData?.hostUser?.id === currentUser?.id;
+        const userIsHost =
+          isCreatorEntry || roomData?.hostUser?.id === currentUser?.id;
         setIsHost(userIsHost);
         setRoomInfo(roomData);
         setRoomParticipants(normalizeRoomParticipants(roomData, currentUser));
@@ -186,7 +203,9 @@ export default function MeetingRoomPage() {
       }
     };
     fetchRoom();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [roomCode, currentUser?.id, isCreatorEntry]);
 
   // Connect LiveKit
@@ -236,10 +255,19 @@ export default function MeetingRoomPage() {
   const sendMessage = () => {
     if (!message.trim()) return;
     const now = new Date();
-    const time = now.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    const time = now.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), sender: currentUser?.name || "Bạn", time, content: message.trim(), isSelf: true },
+      {
+        id: Date.now(),
+        sender: currentUser?.name || "Bạn",
+        time,
+        content: message.trim(),
+        isSelf: true,
+      },
     ]);
     setMessage("");
   };
@@ -310,7 +338,10 @@ export default function MeetingRoomPage() {
       stream: localLivekitParticipant?.stream ?? null,
     };
 
-    const allParticipants = [selfTile, ...(Array.isArray(roomParticipants) ? roomParticipants : [])];
+    const allParticipants = [
+      selfTile,
+      ...(Array.isArray(roomParticipants) ? roomParticipants : []),
+    ];
     return allParticipants
       .map((p, i) => ({ ...p, sortOrder: i }))
       .sort((a, b) => {
@@ -319,16 +350,24 @@ export default function MeetingRoomPage() {
       })
       .map(({ sortOrder, ...p }) => p);
   }, [
-    currentUser?.id, currentUser?.name, currentUser?.email,
-    roomParticipants, micActive, videoActive, isHost,
-    hasLiveKitSession, livekitParticipants,
+    currentUser?.id,
+    currentUser?.name,
+    currentUser?.email,
+    roomParticipants,
+    micActive,
+    videoActive,
+    isHost,
+    hasLiveKitSession,
+    livekitParticipants,
   ]);
 
   const displayedParticipants = useMemo(() => {
     const gridList = Array.isArray(gridParticipants) ? gridParticipants : [];
     if (!hasLiveKitSession) return gridList;
 
-    const livekitList = Array.isArray(livekitParticipants) ? livekitParticipants : [];
+    const livekitList = Array.isArray(livekitParticipants)
+      ? livekitParticipants
+      : [];
     if (livekitList.length === 0) return gridList;
 
     const getUniqueKeys = (p) =>
@@ -357,7 +396,9 @@ export default function MeetingRoomPage() {
     const missingFromLivekit = gridList.filter((gp) => {
       if (gp.self && livekitList.some((lp) => lp.self)) return false;
       const gpKeys = getUniqueKeys(gp);
-      return !livekitList.some((lkp) => getUniqueKeys(lkp).some((k) => gpKeys.includes(k)));
+      return !livekitList.some((lkp) =>
+        getUniqueKeys(lkp).some((k) => gpKeys.includes(k)),
+      );
     });
 
     return [...enrichedLivekitList, ...missingFromLivekit];
@@ -366,17 +407,28 @@ export default function MeetingRoomPage() {
   const visibleParticipants = displayedParticipants.filter((p) => {
     const q = participantQuery.trim().toLowerCase();
     if (!q) return true;
-    return String(p.name || "").toLowerCase().includes(q);
+    return String(p.name || "")
+      .toLowerCase()
+      .includes(q);
   });
 
-  const participantCount = Math.max(1, Array.isArray(displayedParticipants) ? displayedParticipants.length : 0);
+  const participantCount = Math.max(
+    1,
+    Array.isArray(displayedParticipants) ? displayedParticipants.length : 0,
+  );
   const contributorCount = visibleParticipants.length || 1;
 
   const toggleChatPanel = () => {
-    setChatOpen((open) => { if (!open) setParticipantsOpen(false); return !open; });
+    setChatOpen((open) => {
+      if (!open) setParticipantsOpen(false);
+      return !open;
+    });
   };
   const toggleParticipantsPanel = () => {
-    setParticipantsOpen((open) => { if (!open) setChatOpen(false); return !open; });
+    setParticipantsOpen((open) => {
+      if (!open) setChatOpen(false);
+      return !open;
+    });
   };
 
   const copyRoomLink = async () => {
@@ -392,16 +444,28 @@ export default function MeetingRoomPage() {
   const handleInvite = (email = inviteEmail) => {
     const target = String(email || "").trim();
     if (!target) return;
-    const time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    const time = new Date().toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), sender: "Hệ thống", time, content: `Đã tạo lời mời cho ${target}. Link: ${roomJoinLink}`, isSelf: false },
+      {
+        id: Date.now(),
+        sender: "Hệ thống",
+        time,
+        content: `Đã tạo lời mời cho ${target}. Link: ${roomJoinLink}`,
+        isSelf: false,
+      },
     ]);
     setInviteEmail("");
     setIsInviteModalOpen(false);
   };
 
-  const gridStyle = useMemo(() => getParticipantGridStyle(participantCount), [participantCount]);
+  const gridStyle = useMemo(
+    () => getParticipantGridStyle(participantCount),
+    [participantCount],
+  );
 
   if (isChecking) {
     return (
@@ -429,11 +493,18 @@ export default function MeetingRoomPage() {
         .msg-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
       `}</style>
 
-      <div style={{
-        display: "flex", flexDirection: "column", height: "100vh",
-        background: "radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 28%), radial-gradient(circle at top right, rgba(14,165,233,0.08), transparent 20%), #0d1017",
-        fontFamily: "'DM Sans', system-ui, sans-serif", color: "white", overflow: "hidden",
-      }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          background:
+            "radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 28%), radial-gradient(circle at top right, rgba(14,165,233,0.08), transparent 20%), #0d1017",
+          fontFamily: "'DM Sans', system-ui, sans-serif",
+          color: "white",
+          overflow: "hidden",
+        }}
+      >
         <MeetingRoomHeader
           roomTitle={roomTitle}
           elapsedText={formatElapsedTime(elapsed)}
@@ -444,7 +515,15 @@ export default function MeetingRoomPage() {
           onToggleParticipants={toggleParticipantsPanel}
         />
 
-        <main style={{ display: "flex", flex: 1, overflow: "hidden", padding: 12, gap: 10 }}>
+        <main
+          style={{
+            display: "flex",
+            flex: 1,
+            overflow: "hidden",
+            padding: 12,
+            gap: 10,
+          }}
+        >
           <div style={{ flex: 1, minWidth: 0, ...gridStyle }}>
             {displayedParticipants.map((participant) => (
               <ParticipantTile key={participant.id} participant={participant} />
@@ -453,9 +532,12 @@ export default function MeetingRoomPage() {
 
           {chatOpen && (
             <MeetingChatPanel
-              messages={messages} message={message}
-              onMessageChange={setMessage} onSendMessage={sendMessage}
-              onClose={() => setChatOpen(false)} messagesEndRef={messagesEndRef}
+              messages={messages}
+              message={message}
+              onMessageChange={setMessage}
+              onSendMessage={sendMessage}
+              onClose={() => setChatOpen(false)}
+              messagesEndRef={messagesEndRef}
             />
           )}
 
@@ -488,9 +570,13 @@ export default function MeetingRoomPage() {
 
       {isInviteModalOpen && (
         <MeetingInviteModal
-          inviteEmail={inviteEmail} onInviteEmailChange={setInviteEmail}
-          onClose={() => setIsInviteModalOpen(false)} onInvite={() => handleInvite()}
-          roomJoinLink={roomJoinLink} onCopyRoomLink={copyRoomLink} copied={copied}
+          inviteEmail={inviteEmail}
+          onInviteEmailChange={setInviteEmail}
+          onClose={() => setIsInviteModalOpen(false)}
+          onInvite={() => handleInvite()}
+          roomJoinLink={roomJoinLink}
+          onCopyRoomLink={copyRoomLink}
+          copied={copied}
         />
       )}
     </>

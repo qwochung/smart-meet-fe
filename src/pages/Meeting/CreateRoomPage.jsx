@@ -50,7 +50,8 @@ export default function CreateRoomPage() {
     setLoading(true);
     setError("");
 
-    const scheduledAt = date && time ? new Date(`${date}T${time}:00`).toISOString() : null;
+    const scheduledAt =
+      date && time ? new Date(`${date}T${time}:00`).toISOString() : null;
     const payload = {
       name: meetingName.trim(),
       description: description.trim(),
@@ -59,28 +60,20 @@ export default function CreateRoomPage() {
 
     try {
       const response = await roomService.createRoom(payload);
-      const roomCode = response?.roomCode || response?.code || response?.data?.roomCode;
+      const responseData = response?.data || response || {};
+      const roomCode = responseData?.roomCode || responseData?.code;
 
       if (!roomCode) {
         throw new Error("Không nhận được mã phòng từ máy chủ.");
       }
 
-      const joinResponse = await roomService.joinRoom(roomCode, {
-        userId: currentUser.id,
-        userName: currentUser.name,
-        role: "HOST",
-      });
-
-      console.log("CreateRoomPage - joinResponse:", joinResponse);
-
-      const joinData = joinResponse?.data || joinResponse || {};
       const session = {
         roomCode,
         role: "HOST",
         created: true,
-        livekitToken: joinData.livekitToken || joinData.token || "",
-        livekitHost: joinData.livekitHost || joinData.livekitUrl || joinData.livekitServer || "",
-        roomName: joinData.roomName || joinData.name || "",
+        livekitToken: responseData.livekitToken || "",
+        livekitHost: responseData.livekitHost || "",
+        roomName: responseData.name || "",
       };
 
       console.log("CreateRoomPage - session:", session);
