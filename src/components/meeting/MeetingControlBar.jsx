@@ -45,9 +45,11 @@ export default function MeetingControlBar({
   roomCode,
   micActive,
   videoActive,
+  screenSharingActive,
   mediaLoading,
   onToggleMic,
   onToggleVideo,
+  onToggleScreenShare,
   onToggleParticipants,
   onLeave,
 }) {
@@ -124,7 +126,12 @@ export default function MeetingControlBar({
           <Hand size={16} />
         </ControlButton>
 
-        <ControlButton title="Chia sẻ màn hình" disabled>
+        <ControlButton
+          active={screenSharingActive}
+          title={screenSharingActive ? "Dừng chia sẻ màn hình" : "Chia sẻ màn hình"}
+          onClick={onToggleScreenShare}
+          disabled={mediaLoading}
+        >
           <MonitorUp size={16} />
         </ControlButton>
 

@@ -25,8 +25,14 @@ const buildParticipantStream = (participant) => {
 const buildParticipantSnapshot = (participant, isLocal = false) => {
   const stream = buildParticipantStream(participant);
   const publications = Array.from(participant?.trackPublications?.values?.() || participant?.tracks?.values?.() || []);
-  
-  const videoTrack = publications.find(p => p.track?.kind === 'video')?.track;
+
+  const screenSharePublication = publications.find(
+    (p) =>
+      p?.track?.kind === 'video'
+      && String(p?.source || '').toLowerCase().includes('screen')
+  );
+  const cameraPublication = publications.find((p) => p.track?.kind === 'video');
+  const videoTrack = screenSharePublication?.track || cameraPublication?.track;
   const audioTrack = publications.find(p => p.track?.kind === 'audio')?.track;
 
   const fallbackId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -39,6 +45,11 @@ const buildParticipantSnapshot = (participant, isLocal = false) => {
     identity: participant?.identity || participant?.name || 'participant',
     isMuted: Boolean(participant?.isMicrophoneEnabled === false || participant?.isMuted || (audioTrack && audioTrack.isMuted)),
     hasVideo: Boolean(videoTrack && !videoTrack.isMuted) || stream.getVideoTracks().length > 0,
+    isScreenSharing: Boolean(
+      participant?.isScreenShareEnabled
+      || screenSharePublication?.isSubscribed
+      || screenSharePublication?.track
+    ),
     active: Boolean(participant?.isSpeaking),
     self: isLocal,
     avatar: participant?.metadata || '',
@@ -54,10 +65,12 @@ export const useLiveKitRoom = () => {
   const [participants, setParticipants] = useState([]);
   const [connectionState, setConnectionState] = useState('idle');
   const [error, setError] = useState(null);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
 
   const syncParticipants = useCallback((activeRoom) => {
     if (!activeRoom) {
       setParticipants([]);
+      setIsScreenSharing(false);
       return;
     }
 
@@ -69,6 +82,7 @@ export const useLiveKitRoom = () => {
     ];
 
     setParticipants(snapshot);
+    setIsScreenSharing(Boolean(activeRoom.localParticipant?.isScreenShareEnabled));
   }, []);
 
   const connect = useCallback(async ({ url, token, autoAudio = true, autoVideo = true }) => {
@@ -160,6 +174,19 @@ export const useLiveKitRoom = () => {
     return nextEnabled;
   }, [syncParticipants]);
 
+  const toggleScreenShare = useCallback(async () => {
+    const activeRoom = roomRef.current;
+
+    if (!activeRoom) {
+      return false;
+    }
+
+    const nextEnabled = !activeRoom.localParticipant.isScreenShareEnabled;
+    await activeRoom.localParticipant.setScreenShareEnabled(nextEnabled);
+    syncParticipants(activeRoom);
+    return nextEnabled;
+  }, [syncParticipants]);
+
   useEffect(() => {
     return () => {
       roomRef.current?.disconnect();
@@ -177,8 +204,10 @@ export const useLiveKitRoom = () => {
       disconnect,
       toggleMicrophone,
       toggleCamera,
+      toggleScreenShare,
+      isScreenSharing,
       isConnected: connectionState === 'connected',
     }),
-    [room, participants, connectionState, error, connect, disconnect, toggleMicrophone, toggleCamera]
+    [room, participants, connectionState, error, connect, disconnect, toggleMicrophone, toggleCamera, toggleScreenShare, isScreenSharing]
   );
 };
