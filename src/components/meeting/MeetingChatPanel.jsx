@@ -76,7 +76,7 @@ export default function MeetingChatPanel({
   return (
     <aside
       style={{
-        width: 320,
+        width: 340,
         display: "flex",
         flexDirection: "column",
         background: "rgba(255,255,255,0.03)",

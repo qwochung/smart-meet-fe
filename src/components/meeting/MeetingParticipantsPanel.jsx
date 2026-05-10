@@ -13,7 +13,7 @@ export default function MeetingParticipantsPanel({
   return (
     <aside
       style={{
-        width: 360,
+        width: 340,
         display: "flex",
         flexDirection: "column",
         borderRadius: 20,

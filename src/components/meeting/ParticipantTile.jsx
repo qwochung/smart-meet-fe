@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { MicOff } from "lucide-react";
+import { MicOff, MonitorUp } from "lucide-react";
 
 function SpeakerBars() {
   return (
@@ -22,7 +22,11 @@ function SpeakerBars() {
   );
 }
 
-export default function ParticipantTile({ participant }) {
+export default function ParticipantTile({
+  participant,
+  contentFit = "cover",
+  presentationMode = false,
+}) {
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -84,8 +88,10 @@ export default function ParticipantTile({ participant }) {
           style={{
             width: "100%",
             height: "100%",
-            objectFit: "cover",
+            objectFit: contentFit,
+            objectPosition: "center center",
             display: "block",
+            background: "#000",
           }}
         />
       ) : participant.hasVideo && participant.avatar ? (
@@ -128,15 +134,17 @@ export default function ParticipantTile({ participant }) {
         </div>
       )}
 
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 45%)",
-          pointerEvents: "none",
-        }}
-      />
+      {!presentationMode && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 45%)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
 
       {participant.isMuted && (
         <div
@@ -158,26 +166,46 @@ export default function ParticipantTile({ participant }) {
         </div>
       )}
 
-      <div
-        style={{
-          position: "absolute",
-          bottom: 9,
-          left: 9,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          background: "rgba(0,0,0,0.52)",
-          backdropFilter: "blur(8px)",
-          padding: "4px 9px",
-          borderRadius: 8,
-          border: "0.5px solid rgba(255,255,255,0.1)",
-        }}
-      >
-        {participant.active && <SpeakerBars />}
-        <span style={{ fontSize: 10.5, fontWeight: 500, color: "white" }}>
-          {participant.name}
-        </span>
-      </div>
+      {!presentationMode && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 9,
+            left: 9,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "rgba(0,0,0,0.52)",
+            backdropFilter: "blur(8px)",
+            padding: "4px 9px",
+            borderRadius: 8,
+            border: "0.5px solid rgba(255,255,255,0.1)",
+          }}
+        >
+          {participant.active && <SpeakerBars />}
+          <span style={{ fontSize: 10.5, fontWeight: 500, color: "white" }}>
+            {participant.name}
+          </span>
+          {participant.isScreenSharing && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 10,
+                color: "#c7d2fe",
+                background: "rgba(99,102,241,0.25)",
+                border: "0.5px solid rgba(165,180,252,0.6)",
+                borderRadius: 999,
+                padding: "2px 6px",
+              }}
+            >
+              <MonitorUp size={11} />
+              Chia sẻ
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
