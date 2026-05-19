@@ -13,6 +13,7 @@ import {
   MeetingInviteModal,
   MeetingParticipantsPanel,
   MeetingRoomHeader,
+  MeetingSummaryPanel,
   ParticipantTile,
 } from "../../components/meeting";
 import { useLiveKitRoom } from "../../hooks/useLiveKitRoom.js";
@@ -44,7 +45,17 @@ export default function MeetingRoomPage() {
     () => roomSessionStorage.get(roomCode),
     [roomCode],
   );
-  const activeSession = location.state || persistedSession || {};
+  const activeSession = useMemo(
+    () => ({
+      ...(persistedSession || {}),
+      ...(location.state || {}),
+      preMeetingUploads:
+        location.state?.preMeetingUploads ??
+        persistedSession?.preMeetingUploads ??
+        [],
+    }),
+    [location.state, persistedSession],
+  );
   const sessionRole = activeSession?.role;
   const isCreatorEntry =
     sessionRole === "HOST" || activeSession?.created === true;
@@ -96,6 +107,7 @@ export default function MeetingRoomPage() {
   const prevRemoteParticipantKeysRef = useRef(new Set());
   const [isSpotlightListOpen, setIsSpotlightListOpen] = useState(false);
   const [focusedParticipantKey, setFocusedParticipantKey] = useState(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   // Unlock audio on first user interaction (browser autoplay policy)
   useEffect(() => {
@@ -272,7 +284,9 @@ export default function MeetingRoomPage() {
     if (!Array.isArray(livekitParticipants)) return;
 
     const getKey = (p) =>
-      String(p?.identity || p?.id || p?.email || p?.userId || "").trim().toLowerCase();
+      String(p?.identity || p?.id || p?.email || p?.userId || "")
+        .trim()
+        .toLowerCase();
 
     const currentRemoteKeys = new Set(
       livekitParticipants
@@ -514,23 +528,50 @@ export default function MeetingRoomPage() {
       }) || null
     );
   }, [focusedParticipantKey, spotlightParticipants]);
-  const spotlightPrimaryParticipant = focusedParticipant || screenShareParticipant;
-  const isPrimaryScreenShare = Boolean(spotlightPrimaryParticipant?.isScreenSharing);
+  const spotlightPrimaryParticipant =
+    focusedParticipant || screenShareParticipant;
+  const isPrimaryScreenShare = Boolean(
+    spotlightPrimaryParticipant?.isScreenSharing,
+  );
 
   const toggleChatPanel = () => {
     setChatOpen((open) => {
-      if (!open) setParticipantsOpen(false);
+      if (!open) {
+        setParticipantsOpen(false);
+        setSummaryOpen(false);
+      }
       return !open;
     });
   };
   const toggleParticipantsPanel = () => {
     setParticipantsOpen((open) => {
-      if (!open) setChatOpen(false);
+      if (!open) {
+        setChatOpen(false);
+        setSummaryOpen(false);
+      }
       return !open;
     });
   };
-  const toggleSpotlightList = () =>
-    setIsSpotlightListOpen((prev) => !prev);
+  const toggleSummaryPanel = () => {
+    setSummaryOpen((open) => {
+      if (!open) {
+        setChatOpen(false);
+        setParticipantsOpen(false);
+      }
+      return !open;
+    });
+  };
+  const toggleSpotlightList = () => setIsSpotlightListOpen((prev) => !prev);
+
+  const preMeetingSummaryItems = useMemo(
+    () =>
+      Array.isArray(activeSession?.preMeetingUploads)
+        ? activeSession.preMeetingUploads.filter(
+            (item) => String(item?.summary || "").trim().length > 0,
+          )
+        : [],
+    [activeSession?.preMeetingUploads],
+  );
 
   const copyRoomLink = async () => {
     try {
@@ -611,9 +652,12 @@ export default function MeetingRoomPage() {
           elapsedText={formatElapsedTime(elapsed)}
           chatOpen={chatOpen}
           participantsOpen={participantsOpen}
+          summaryOpen={summaryOpen}
           participantCount={participantCount}
+          summaryCount={preMeetingSummaryItems.length}
           onToggleChat={toggleChatPanel}
           onToggleParticipants={toggleParticipantsPanel}
+          onToggleSummary={toggleSummaryPanel}
         />
 
         <main
@@ -656,16 +700,16 @@ export default function MeetingRoomPage() {
                           ? "min(100%, calc(100vh - 110px))"
                           : "100%",
                         maxWidth: isPrimaryScreenShare ? 1560 : "100%",
-                        maxHeight: isPrimaryScreenShare ? "calc(100vh - 110px)" : "100%",
+                        maxHeight: isPrimaryScreenShare
+                          ? "calc(100vh - 110px)"
+                          : "100%",
                         aspectRatio: isPrimaryScreenShare ? "16 / 9" : "auto",
                       }}
                     >
                       <ParticipantTile
                         key={spotlightPrimaryParticipant.id}
                         participant={spotlightPrimaryParticipant}
-                        contentFit={
-                          isPrimaryScreenShare ? "contain" : "cover"
-                        }
+                        contentFit={isPrimaryScreenShare ? "contain" : "cover"}
                         presentationMode={isPrimaryScreenShare}
                       />
                     </div>
@@ -740,13 +784,16 @@ export default function MeetingRoomPage() {
                   >
                     {spotlightParticipants.map((participant) => {
                       const participantKey = String(
-                        participant?.identity || participant?.id || participant?.email || "",
+                        participant?.identity ||
+                          participant?.id ||
+                          participant?.email ||
+                          "",
                       )
                         .trim()
                         .toLowerCase();
                       const isSelected =
-                        participantKey === focusedParticipantKey
-                        || (!focusedParticipant && participant?.isScreenSharing);
+                        participantKey === focusedParticipantKey ||
+                        (!focusedParticipant && participant?.isScreenSharing);
                       return (
                         <button
                           key={`spotlight-${participant.id}`}
@@ -810,7 +857,10 @@ export default function MeetingRoomPage() {
             ) : (
               <div style={{ width: "100%", height: "100%", ...gridStyle }}>
                 {displayedParticipants.map((participant) => (
-                  <ParticipantTile key={participant.id} participant={participant} />
+                  <ParticipantTile
+                    key={participant.id}
+                    participant={participant}
+                  />
                 ))}
               </div>
             )}
@@ -838,6 +888,13 @@ export default function MeetingRoomPage() {
               pendingParticipants={pendingParticipants}
               onAccept={handleAcceptParticipant}
               onReject={handleRejectParticipant}
+            />
+          )}
+
+          {summaryOpen && (
+            <MeetingSummaryPanel
+              summaryItems={preMeetingSummaryItems}
+              onClose={() => setSummaryOpen(false)}
             />
           )}
         </main>

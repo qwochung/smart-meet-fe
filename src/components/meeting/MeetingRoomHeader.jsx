@@ -1,4 +1,4 @@
-import { Info, MessageSquare, Settings, Users } from "lucide-react";
+import { FileText, Info, MessageSquare, Settings, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
 function HeaderActionButton({ button }) {
@@ -69,9 +69,12 @@ export default function MeetingRoomHeader({
   elapsedText,
   chatOpen,
   participantsOpen,
+  summaryOpen,
   participantCount,
   onToggleChat,
   onToggleParticipants,
+  onToggleSummary,
+  summaryCount = 0,
 }) {
   const actionButtons = [
     {
@@ -86,6 +89,13 @@ export default function MeetingRoomHeader({
       badge: true,
       badgeLabel: participantCount,
       active: participantsOpen,
+    },
+    {
+      icon: <FileText size={15} />,
+      onClick: onToggleSummary,
+      badge: summaryCount > 0,
+      badgeLabel: summaryCount > 0 ? summaryCount : null,
+      active: summaryOpen,
     },
     { icon: <Info size={15} /> },
     { icon: <Settings size={15} /> },
