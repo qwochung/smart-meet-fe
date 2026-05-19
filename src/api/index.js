@@ -1,7 +1,7 @@
-import { roomApi } from './roomApi';
-import { userApi } from './userApi';
-import { authApi } from './authApi';
-import { documentApi } from './documentApi';
+import { roomApi } from "./roomApi";
+import { userApi } from "./userApi";
+import { authApi } from "./authApi";
+import { documentApi } from "./documentApi";
 
 const api = {
   auth: authApi,

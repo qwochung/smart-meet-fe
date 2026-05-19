@@ -32,6 +32,8 @@ import {
   playNotificationBeep,
 } from "../../utils/notificationSound.js";
 
+import WhiteboardOverlay from "./WhiteboardOverlay";
+
 export default function MeetingRoomPage() {
   const currentUser = getStoredUser();
   if (!currentUser) {
@@ -687,19 +689,19 @@ export default function MeetingRoomPage() {
                       alignItems: "center",
                       justifyContent: "center",
                       paddingInline: isPrimaryScreenShare
-                        ? "clamp(20px, 5vw, 84px)"
+                        ? "clamp(8px, 2vw, 24px)"
                         : 0,
                     }}
                   >
                     <div
                       style={{
                         width: isPrimaryScreenShare
-                          ? "min(100%, calc((100vh - 110px) * 1.72))"
+                          ? "min(100%, calc((100vh - 110px) * 1.78))"
                           : "100%",
                         height: isPrimaryScreenShare
                           ? "min(100%, calc(100vh - 110px))"
                           : "100%",
-                        maxWidth: isPrimaryScreenShare ? 1560 : "100%",
+                        maxWidth: isPrimaryScreenShare ? "100%" : "100%",
                         maxHeight: isPrimaryScreenShare
                           ? "calc(100vh - 110px)"
                           : "100%",
@@ -714,6 +716,12 @@ export default function MeetingRoomPage() {
                       />
                     </div>
                   </div>
+
+                  <WhiteboardOverlay
+                    roomCode={roomCode}
+                    userId={currentUser?.id}
+                    enabled={isScreenSharing || isPrimaryScreenShare} // bật khi share hoặc xem screen share của người khác
+                  />
                 </div>
 
                 {focusedParticipant && (
