@@ -4,6 +4,7 @@ import { CalendarDays, Clock3, Settings2, Sparkles, X } from "lucide-react";
 import { Button, Card } from "../../components/common";
 import { getStoredUser } from "../../utils/auth.js";
 import { roomService, roomSessionStorage } from "../../services/roomService";
+import PreMeetingUpload from "./PreMeetingUpload.jsx";
 
 function Toggle({ enabled, onToggle }) {
   return (
@@ -36,6 +37,7 @@ export default function CreateRoomPage() {
   const [privacySetting, setPrivacySetting] = useState("chi-khach-moi");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [createdSession, setCreatedSession] = useState(null);
 
   const currentUser = getStoredUser();
 
@@ -79,11 +81,7 @@ export default function CreateRoomPage() {
       console.log("CreateRoomPage - session:", session);
 
       roomSessionStorage.set(session);
-
-      navigate(`/room/${roomCode}`, {
-        replace: true,
-        state: session,
-      });
+      setCreatedSession(session);
     } catch (createError) {
       setError(createError?.message || "Không thể tạo cuộc họp.");
     } finally {
@@ -112,6 +110,30 @@ export default function CreateRoomPage() {
       addParticipant();
     }
   };
+
+  if (createdSession) {
+    const uploadStorageKey = `smart-meet-pre-meeting-upload:${createdSession.roomCode}:${currentUser?.id}:HOST`;
+
+    return (
+      <PreMeetingUpload
+        roomCode={createdSession.roomCode}
+        roomName={createdSession.roomName}
+        dismissStorageKey={uploadStorageKey}
+        onContinue={() => {
+          navigate(`/room/${createdSession.roomCode}`, {
+            replace: true,
+            state: createdSession,
+          });
+        }}
+        onSkip={() => {
+          navigate(`/room/${createdSession.roomCode}`, {
+            replace: true,
+            state: createdSession,
+          });
+        }}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
