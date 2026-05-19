@@ -304,8 +304,7 @@ function DropZone({ onFiles, isDragging, setIsDragging }) {
       onDragLeave={handleDragLeave}
       onClick={() => inputRef.current?.click()}
       style={{
-        border: `2px dashed ${isDragging ? "rgba(37,99,235,0.45)" : "#cbd5e1"
-          }`,
+        border: `2px dashed ${isDragging ? "rgba(37,99,235,0.45)" : "#cbd5e1"}`,
         borderRadius: 16,
         padding: "28px 18px",
         textAlign: "center",
@@ -329,11 +328,10 @@ function DropZone({ onFiles, isDragging, setIsDragging }) {
           width: 48,
           height: 48,
           borderRadius: 14,
-          background: isDragging
-            ? "rgba(59,130,246,0.15)"
-            : "#f1f5f9",
-          border: `1px solid ${isDragging ? "rgba(59,130,246,0.35)" : "#e2e8f0"
-            }`,
+          background: isDragging ? "rgba(59,130,246,0.15)" : "#f1f5f9",
+          border: `1px solid ${
+            isDragging ? "rgba(59,130,246,0.35)" : "#e2e8f0"
+          }`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -341,10 +339,7 @@ function DropZone({ onFiles, isDragging, setIsDragging }) {
           transition: "all 0.2s",
         }}
       >
-        <Upload
-          size={22}
-          color={isDragging ? THEME.accentBright : "#94a3b8"}
-        />
+        <Upload size={22} color={isDragging ? THEME.accentBright : "#94a3b8"} />
       </div>
 
       <p
@@ -469,7 +464,9 @@ export default function PreMeetingUpload({
         .filter((f) => {
           if (f.size > MAX_FILE_SIZE) return false;
           if (!isAcceptedFile(f)) return false;
-          if (items.some((i) => i.file.name === f.name && i.file.size === f.size))
+          if (
+            items.some((i) => i.file.name === f.name && i.file.size === f.size)
+          )
             return false;
           return true;
         })
@@ -499,7 +496,9 @@ export default function PreMeetingUpload({
         await fetchDocuments();
         setActionSuccess("Upload tài liệu thành công.");
       } catch (error) {
-        setItems((prev) => prev.filter((i) => !tempItems.some((t) => t.id === i.id)));
+        setItems((prev) =>
+          prev.filter((i) => !tempItems.some((t) => t.id === i.id)),
+        );
         setActionError(
           error?.response?.data?.message ||
             error?.message ||
@@ -516,7 +515,10 @@ export default function PreMeetingUpload({
     setActionSuccess("");
 
     try {
-      const blob = await documentApi.downloadDocument(roomCode, item.documentId);
+      const blob = await documentApi.downloadDocument(
+        roomCode,
+        item.documentId,
+      );
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -571,8 +573,7 @@ export default function PreMeetingUpload({
 
     const mockSummaries = {
       pdf: "Tài liệu trình bày chiến lược sản phẩm Q2, bao gồm roadmap tính năng và các KPI cần đạt.",
-      pptx:
-        "Slide deck gồm 14 trang, nêu bật vấn đề thị trường, giải pháp đề xuất và kế hoạch triển khai 6 tháng.",
+      pptx: "Slide deck gồm 14 trang, nêu bật vấn đề thị trường, giải pháp đề xuất và kế hoạch triển khai 6 tháng.",
       docx: "Báo cáo phân tích kỹ thuật với 3 phương án kiến trúc, so sánh ưu nhược điểm và đề xuất lựa chọn tối ưu.",
       default:
         "Nội dung chính đã được trích xuất. Tài liệu sẵn sàng để chia sẻ với người tham dự.",
@@ -875,7 +876,9 @@ export default function PreMeetingUpload({
                     <>
                       <Loader2
                         size={13}
-                        style={{ animation: "preMeetingSpin 1s linear infinite" }}
+                        style={{
+                          animation: "preMeetingSpin 1s linear infinite",
+                        }}
                       />
                       Đang phân tích...
                     </>
@@ -1049,8 +1052,8 @@ export default function PreMeetingUpload({
           marginTop: 14,
         }}
       >
-        Tài liệu upload được mã hóa và tự động xóa sau khi cuộc họp kết thúc (theo
-        chính sách hệ thống).
+        Tài liệu upload được mã hóa và tự động xóa sau khi cuộc họp kết thúc
+        (theo chính sách hệ thống).
       </p>
     </div>
   );
