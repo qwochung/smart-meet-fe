@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { MicOff, MonitorUp } from "lucide-react";
+import { MicOff, MonitorUp, Hand } from "lucide-react";
 
 function SpeakerBars() {
   return (
@@ -163,6 +163,28 @@ export default function ParticipantTile({
           }}
         >
           <MicOff size={13} color="#f87171" />
+        </div>
+      )}
+
+      {participant.isHandRaised && (
+        <div
+          style={{
+            position: "absolute",
+            top: 10,
+            left: 10,
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            background: "rgba(59,130,246,0.85)", // blue-500
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 4px 12px rgba(59,130,246,0.4)",
+            animation: "livePulse 2s ease-in-out infinite",
+          }}
+        >
+          <Hand size={14} color="white" />
         </div>
       )}
 

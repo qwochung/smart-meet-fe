@@ -1,4 +1,4 @@
-import { ChevronUp, MoreVertical, Search, UserPlus, X, Check } from "lucide-react";
+import { ChevronUp, MoreVertical, Search, UserPlus, X, Check, Hand } from "lucide-react";
 
 export default function MeetingParticipantsPanel({
                                                    participantQuery,
@@ -297,6 +297,26 @@ export default function MeetingParticipantsPanel({
                         : "Trong cuộc họp"}
                   </div>
                 </div>
+
+                {participant.isHandRaised && (
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: "50%",
+                      background: "rgba(59,130,246,0.2)",
+                      color: "#60a5fa",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      animation: "livePulse 2s ease-in-out infinite",
+                    }}
+                    title="Đang giơ tay"
+                  >
+                    <Hand size={14} />
+                  </div>
+                )}
 
                 <button
                   type="button"

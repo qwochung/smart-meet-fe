@@ -115,6 +115,7 @@ export default function WhiteboardToolbar({
   onSave,
   collapsed,
   onToggleCollapse,
+  isScreenSharer = false,
 }) {
   const [showColorPicker, setShowColorPicker] = useState(false);
 
@@ -374,9 +375,11 @@ export default function WhiteboardToolbar({
           <Undo2 size={15} />
         </ToolBtn>
 
-        <ToolBtn title="Xóa tất cả" onClick={onClear}>
-          <Trash2 size={15} />
-        </ToolBtn>
+        {isScreenSharer && (
+          <ToolBtn title="Xóa tất cả" onClick={onClear}>
+            <Trash2 size={15} />
+          </ToolBtn>
+        )}
 
         <ToolBtn title="Lưu ảnh" onClick={onSave}>
           <Download size={15} />

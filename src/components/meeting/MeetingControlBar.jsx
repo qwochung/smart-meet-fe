@@ -9,6 +9,7 @@ import {
   Users,
   Video,
   VideoOff,
+  PenTool,
 } from "lucide-react";
 
 function ControlButton({ onClick, active, children, title, disabled }) {
@@ -52,6 +53,11 @@ export default function MeetingControlBar({
   onToggleScreenShare,
   onToggleParticipants,
   onLeave,
+  whiteboardActive,
+  onToggleWhiteboard,
+  isWhiteboardAllowed,
+  isHandRaised,
+  onToggleRaiseHand,
 }) {
   return (
     <footer
@@ -122,7 +128,11 @@ export default function MeetingControlBar({
           </span>
         </ControlButton>
 
-        <ControlButton title="Giơ tay" disabled>
+        <ControlButton
+          title={isHandRaised ? "Hạ tay xuống" : "Giơ tay"}
+          onClick={onToggleRaiseHand}
+          active={isHandRaised}
+        >
           <Hand size={16} />
         </ControlButton>
 
@@ -133,6 +143,15 @@ export default function MeetingControlBar({
           disabled={mediaLoading}
         >
           <MonitorUp size={16} />
+        </ControlButton>
+
+        <ControlButton
+          active={whiteboardActive}
+          title={whiteboardActive ? "Tắt bảng vẽ" : "Bật bảng vẽ"}
+          onClick={onToggleWhiteboard}
+          disabled={!isWhiteboardAllowed}
+        >
+          <PenTool size={16} />
         </ControlButton>
 
         <ControlButton title="Người tham gia" onClick={onToggleParticipants}>

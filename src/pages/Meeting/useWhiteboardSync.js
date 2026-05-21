@@ -6,22 +6,13 @@ import apiConfig from "../../configs/apiConfig";
 /**
  * useWhiteboardSync
  *
- * Đồng bộ nét vẽ whiteboard giữa các participant qua WebSocket STOMP.
- *
- * Hoạt động:
- *  - Khi user vẽ xong 1 nét → gửi diff (chỉ nét mới) lên /app/whiteboard/{roomCode}
- *  - Khi nhận tin nhắn từ /topic/whiteboard/{roomCode} → áp lên canvas qua ref
- *
- * @param {string}   roomCode
- * @param {boolean}  enabled
- * @param {React.RefObject} canvasRef  — ref của WhiteboardCanvas
- * @param {string}   userId           — để lọc bỏ tin nhắn của chính mình
+ * Đồng bộ nét vẽ whiteboard giữa tất cả participant qua WebSocket STOMP.
+ * Tất cả mọi người đều subscribe để nhận updates, và đều có thể publish.
  */
 export function useWhiteboardSync({ roomCode, enabled, canvasRef, userId }) {
   const clientRef = useRef(null);
-  const lastSentRef = useRef(null); // tránh gửi lại ảnh giống nhau
-
-  // ── Connect STOMP ────────────────────────────────────────────────────────
+  const lastSentRef = useRef(null);
+  const isConnectedRef = useRef(false);
 
   useEffect(() => {
     if (!enabled || !roomCode) return;
@@ -36,13 +27,20 @@ export function useWhiteboardSync({ roomCode, enabled, canvasRef, userId }) {
       heartbeatOutgoing: 10000,
 
       onConnect: () => {
-        // Subscribe nhận nét vẽ từ các participant khác
+        isConnectedRef.current = true;
+        console.log(`[Whiteboard] Connected, subscribing to room ${roomCode}`);
+
+        // Tất cả participant đều subscribe để nhận nét vẽ từ người khác
         client.subscribe(`/topic/whiteboard/${roomCode}`, (frame) => {
           try {
             const msg = JSON.parse(frame.body);
 
-            // Bỏ qua tin nhắn của chính mình
-            if (msg.senderId === userId) return;
+            // Bỏ qua tin nhắn của chính mình (đã vẽ rồi, không cần load lại)
+            if (String(msg.senderId) === String(userId)) return;
+
+            console.log(
+              `[Whiteboard] Received ${msg.type} from ${msg.senderId}`,
+            );
 
             if (msg.type === "DRAW" && msg.dataURL && canvasRef.current) {
               canvasRef.current.loadDataURL(msg.dataURL);
@@ -52,36 +50,53 @@ export function useWhiteboardSync({ roomCode, enabled, canvasRef, userId }) {
               canvasRef.current.clear();
             }
           } catch (e) {
-            console.warn("Whiteboard WS parse error:", e);
+            console.warn("[Whiteboard] Parse error:", e);
           }
         });
       },
 
-      onWebSocketError: (e) => console.warn("Whiteboard WS error:", e),
+      onDisconnect: () => {
+        isConnectedRef.current = false;
+        console.log("[Whiteboard] Disconnected");
+      },
+
+      onWebSocketError: (e) => {
+        isConnectedRef.current = false;
+        console.warn("[Whiteboard] WS error:", e);
+      },
+
+      onStompError: (frame) => {
+        console.warn("[Whiteboard] STOMP error:", frame);
+      },
     });
 
     client.activate();
     clientRef.current = client;
 
     return () => {
+      isConnectedRef.current = false;
       client.deactivate();
       clientRef.current = null;
+      lastSentRef.current = null;
     };
   }, [enabled, roomCode, userId, canvasRef]);
 
-  // ── Publish draw ─────────────────────────────────────────────────────────
-
   const publishDraw = useCallback(
     (dataURL) => {
-      if (!clientRef.current?.connected) return;
-      if (dataURL === lastSentRef.current) return; // không gửi lại nếu không đổi
+      const client = clientRef.current;
+      if (!client?.connected) {
+        console.warn("[Whiteboard] publishDraw: not connected");
+        return;
+      }
+      // Tránh gửi lại nếu canvas không thay đổi
+      if (dataURL === lastSentRef.current) return;
       lastSentRef.current = dataURL;
 
-      clientRef.current.publish({
+      client.publish({
         destination: `/app/whiteboard/${roomCode}`,
         body: JSON.stringify({
           type: "DRAW",
-          senderId: userId,
+          senderId: String(userId),
           dataURL,
         }),
       });
@@ -89,13 +104,18 @@ export function useWhiteboardSync({ roomCode, enabled, canvasRef, userId }) {
     [roomCode, userId],
   );
 
-  // ── Publish clear ─────────────────────────────────────────────────────────
-
   const publishClear = useCallback(() => {
-    if (!clientRef.current?.connected) return;
-    clientRef.current.publish({
+    const client = clientRef.current;
+    if (!client?.connected) return;
+
+    lastSentRef.current = null; // reset để lần vẽ tiếp theo được gửi
+
+    client.publish({
       destination: `/app/whiteboard/${roomCode}`,
-      body: JSON.stringify({ type: "CLEAR", senderId: userId }),
+      body: JSON.stringify({
+        type: "CLEAR",
+        senderId: String(userId),
+      }),
     });
   }, [roomCode, userId]);
 

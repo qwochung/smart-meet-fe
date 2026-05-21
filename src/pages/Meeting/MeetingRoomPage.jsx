@@ -76,13 +76,15 @@ export default function MeetingRoomPage() {
     toggleCamera: toggleLiveKitCamera,
     toggleScreenShare: toggleLiveKitScreenShare,
     isScreenSharing,
+    raisedHands,
+    toggleRaiseHand,
   } = useLiveKitRoom();
 
   const initialJoinSettings = location.state?.joinSettings;
   const isApproved = location.state?.approved;
   const isParticipantAllowed = location.state?.pending === false || isApproved;
 
-  const [chatOpen, setChatOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
   const [micActive, setMicActive] = useState(
     initialJoinSettings?.micOn ?? true,
   );
@@ -94,6 +96,15 @@ export default function MeetingRoomPage() {
   const [messages, setMessages] = useState(() =>
     createInitialMessages(sessionRole === "HOST"),
   );
+  const [joinedAt] = useState(() => {
+    const existingSession = roomSessionStorage.get(roomCode);
+    if (existingSession?.joinedAt) return existingSession.joinedAt;
+    const now = Date.now();
+    if (existingSession) {
+      roomSessionStorage.set({ ...existingSession, joinedAt: now });
+    }
+    return now;
+  });
   const [elapsed, setElapsed] = useState(0);
   const [roomInfo, setRoomInfo] = useState(null);
   const [roomParticipants, setRoomParticipants] = useState([]);
@@ -110,6 +121,7 @@ export default function MeetingRoomPage() {
   const [isSpotlightListOpen, setIsSpotlightListOpen] = useState(false);
   const [focusedParticipantKey, setFocusedParticipantKey] = useState(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [whiteboardActive, setWhiteboardActive] = useState(false);
 
   // Unlock audio on first user interaction (browser autoplay policy)
   useEffect(() => {
@@ -315,9 +327,13 @@ export default function MeetingRoomPage() {
 
   // Timer
   useEffect(() => {
-    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
+    const updateElapsed = () => {
+      setElapsed(Math.floor((Date.now() - joinedAt) / 1000));
+    };
+    updateElapsed();
+    const t = setInterval(updateElapsed, 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [joinedAt]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -472,9 +488,13 @@ export default function MeetingRoomPage() {
           name: match.name || lkp.name,
           avatar: match.avatar || lkp.avatar,
           isHost: match.isHost !== undefined ? match.isHost : lkp.isHost,
+          isHandRaised: raisedHands.has(lkp.identity) || raisedHands.has(lkp.id) || raisedHands.has(lkp.sid),
         };
       }
-      return lkp;
+      return {
+        ...lkp,
+        isHandRaised: raisedHands.has(lkp.identity) || raisedHands.has(lkp.id) || raisedHands.has(lkp.sid),
+      };
     });
 
     const missingFromLivekit = gridList.filter((gp) => {
@@ -485,8 +505,11 @@ export default function MeetingRoomPage() {
       );
     });
 
-    return [...enrichedLivekitList, ...missingFromLivekit];
-  }, [hasLiveKitSession, livekitParticipants, gridParticipants]);
+    return [...enrichedLivekitList, ...missingFromLivekit.map(p => ({
+      ...p,
+      isHandRaised: raisedHands.has(p.identity) || raisedHands.has(p.id) || raisedHands.has(p.sid),
+    }))];
+  }, [hasLiveKitSession, livekitParticipants, gridParticipants, raisedHands]);
 
   const visibleParticipants = displayedParticipants.filter((p) => {
     const q = participantQuery.trim().toLowerCase();
@@ -671,208 +694,211 @@ export default function MeetingRoomPage() {
             gap: 10,
           }}
         >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {screenShareParticipant ? (
+          {screenShareParticipant ? (
+            // position: relative QUAN TRỌNG — WhiteboardOverlay dùng position: absolute inset: 0
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                position: "relative", // ← ĐÂY LÀ FIX CHÍNH
+              }}
+            >
+              {/* Video của người share màn hình */}
               <div
                 style={{
                   width: "100%",
                   height: "100%",
-                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingInline: isPrimaryScreenShare
+                    ? "clamp(8px, 2vw, 24px)"
+                    : 0,
                 }}
               >
-                <div style={{ width: "100%", height: "100%" }}>
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      paddingInline: isPrimaryScreenShare
-                        ? "clamp(8px, 2vw, 24px)"
-                        : 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: isPrimaryScreenShare
-                          ? "min(100%, calc((100vh - 110px) * 1.78))"
-                          : "100%",
-                        height: isPrimaryScreenShare
-                          ? "min(100%, calc(100vh - 110px))"
-                          : "100%",
-                        maxWidth: isPrimaryScreenShare ? "100%" : "100%",
-                        maxHeight: isPrimaryScreenShare
-                          ? "calc(100vh - 110px)"
-                          : "100%",
-                        aspectRatio: isPrimaryScreenShare ? "16 / 9" : "auto",
-                      }}
-                    >
-                      <ParticipantTile
-                        key={spotlightPrimaryParticipant.id}
-                        participant={spotlightPrimaryParticipant}
-                        contentFit={isPrimaryScreenShare ? "contain" : "cover"}
-                        presentationMode={isPrimaryScreenShare}
-                      />
-                    </div>
-                  </div>
-
-                  <WhiteboardOverlay
-                    roomCode={roomCode}
-                    userId={currentUser?.id}
-                    enabled={isScreenSharing || isPrimaryScreenShare} // bật khi share hoặc xem screen share của người khác
+                <div
+                  style={{
+                    width: isPrimaryScreenShare
+                      ? "min(100%, calc((100vh - 110px) * 1.78))"
+                      : "100%",
+                    height: isPrimaryScreenShare
+                      ? "min(100%, calc(100vh - 110px))"
+                      : "100%",
+                    maxWidth: "100%",
+                    maxHeight: isPrimaryScreenShare
+                      ? "calc(100vh - 110px)"
+                      : "100%",
+                    aspectRatio: isPrimaryScreenShare ? "16 / 9" : "auto",
+                  }}
+                >
+                  <ParticipantTile
+                    key={spotlightPrimaryParticipant.id}
+                    participant={spotlightPrimaryParticipant}
+                    contentFit={isPrimaryScreenShare ? "contain" : "cover"}
+                    presentationMode={isPrimaryScreenShare}
                   />
                 </div>
+              </div>
 
-                {focusedParticipant && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: 16,
-                      bottom: 70,
-                      width: 220,
-                      height: 130,
-                      borderRadius: 12,
-                      overflow: "hidden",
-                      boxShadow: "0 10px 28px rgba(0,0,0,0.35)",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      zIndex: 6,
-                    }}
-                  >
-                    <ParticipantTile
-                      key={`pip-${screenShareParticipant.id}`}
-                      participant={screenShareParticipant}
-                      contentFit="contain"
-                      presentationMode
-                    />
-                  </div>
-                )}
+              <WhiteboardOverlay
+                roomCode={roomCode}
+                userId={currentUser?.id}
+                enabled={Boolean(screenShareParticipant)}
+                isScreenSharer={Boolean(screenShareParticipant?.self)}
+                active={whiteboardActive}
+              />
 
-                <button
-                  type="button"
-                  onClick={toggleSpotlightList}
+              {/* PiP — camera của người share */}
+              {focusedParticipant && (
+                <div
                   style={{
                     position: "absolute",
                     right: 16,
-                    bottom: 16,
-                    zIndex: 7,
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    background: "rgba(8,12,20,0.75)",
-                    color: "white",
-                    borderRadius: 999,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    padding: "7px 12px",
-                    cursor: "pointer",
-                    backdropFilter: "blur(6px)",
+                    bottom: 70,
+                    width: 220,
+                    height: 130,
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    boxShadow: "0 10px 28px rgba(0,0,0,0.35)",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    zIndex: 6,
                   }}
                 >
-                  {participantCountLabel} người trong phòng
-                </button>
+                  <ParticipantTile
+                    key={`pip-${screenShareParticipant.id}`}
+                    participant={screenShareParticipant}
+                    contentFit="contain"
+                    presentationMode
+                  />
+                </div>
+              )}
 
-                {isSpotlightListOpen && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: 16,
-                      bottom: 58,
-                      width: 300,
-                      maxHeight: 360,
-                      overflowY: "auto",
-                      borderRadius: 14,
-                      padding: 10,
-                      background: "rgba(9,14,24,0.88)",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      boxShadow: "0 14px 34px rgba(0,0,0,0.38)",
-                      display: "grid",
-                      gridTemplateColumns: "1fr",
-                      gap: 8,
-                      zIndex: 8,
-                    }}
-                  >
-                    {spotlightParticipants.map((participant) => {
-                      const participantKey = String(
-                        participant?.identity ||
-                          participant?.id ||
-                          participant?.email ||
-                          "",
-                      )
-                        .trim()
-                        .toLowerCase();
-                      const isSelected =
-                        participantKey === focusedParticipantKey ||
-                        (!focusedParticipant && participant?.isScreenSharing);
-                      return (
-                        <button
-                          key={`spotlight-${participant.id}`}
-                          type="button"
-                          onClick={() => {
-                            if (participant?.isScreenSharing) {
-                              setFocusedParticipantKey(null);
-                              return;
-                            }
-                            setFocusedParticipantKey(participantKey);
-                          }}
+              {/* Nút đếm người */}
+              <button
+                type="button"
+                onClick={toggleSpotlightList}
+                style={{
+                  position: "absolute",
+                  right: 16,
+                  bottom: 16,
+                  zIndex: 7,
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  background: "rgba(8,12,20,0.75)",
+                  color: "white",
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: "7px 12px",
+                  cursor: "pointer",
+                  backdropFilter: "blur(6px)",
+                }}
+              >
+                {participantCountLabel} người trong phòng
+              </button>
+
+              {/* Spotlight list */}
+              {isSpotlightListOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 16,
+                    bottom: 58,
+                    width: 300,
+                    maxHeight: 360,
+                    overflowY: "auto",
+                    borderRadius: 14,
+                    padding: 10,
+                    background: "rgba(9,14,24,0.88)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    boxShadow: "0 14px 34px rgba(0,0,0,0.38)",
+                    display: "grid",
+                    gridTemplateColumns: "1fr",
+                    gap: 8,
+                    zIndex: 8,
+                  }}
+                >
+                  {spotlightParticipants.map((participant) => {
+                    const participantKey = String(
+                      participant?.identity ||
+                        participant?.id ||
+                        participant?.email ||
+                        "",
+                    )
+                      .trim()
+                      .toLowerCase();
+                    const isSelected =
+                      participantKey === focusedParticipantKey ||
+                      (!focusedParticipant && participant?.isScreenSharing);
+                    return (
+                      <button
+                        key={`spotlight-${participant.id}`}
+                        type="button"
+                        onClick={() => {
+                          if (participant?.isScreenSharing) {
+                            setFocusedParticipantKey(null);
+                            return;
+                          }
+                          setFocusedParticipantKey(participantKey);
+                        }}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "8px 10px",
+                          borderRadius: 10,
+                          border: isSelected
+                            ? "1px solid rgba(96,165,250,0.75)"
+                            : "1px solid rgba(255,255,255,0.12)",
+                          background: isSelected
+                            ? "rgba(37,99,235,0.22)"
+                            : "rgba(255,255,255,0.04)",
+                          color: "white",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 10,
+                        }}
+                      >
+                        <span
                           style={{
-                            width: "100%",
-                            textAlign: "left",
-                            padding: "8px 10px",
-                            borderRadius: 10,
-                            border: isSelected
-                              ? "1px solid rgba(96,165,250,0.75)"
-                              : "1px solid rgba(255,255,255,0.12)",
-                            background: isSelected
-                              ? "rgba(37,99,235,0.22)"
-                              : "rgba(255,255,255,0.04)",
-                            color: "white",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 10,
+                            fontSize: 12.5,
+                            fontWeight: 600,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                           }}
                         >
+                          {participant?.name || "Participant"}
+                        </span>
+                        {participant?.isScreenSharing && (
                           <span
                             style={{
-                              fontSize: 12.5,
-                              fontWeight: 600,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
+                              fontSize: 10,
+                              color: "#bfdbfe",
+                              border: "1px solid rgba(147,197,253,0.5)",
+                              borderRadius: 999,
+                              padding: "2px 7px",
                             }}
                           >
-                            {participant?.name || "Participant"}
+                            Đang chia sẻ
                           </span>
-                          {participant?.isScreenSharing && (
-                            <span
-                              style={{
-                                fontSize: 10,
-                                color: "#bfdbfe",
-                                border: "1px solid rgba(147,197,253,0.5)",
-                                borderRadius: 999,
-                                padding: "2px 7px",
-                              }}
-                            >
-                              Đang chia sẻ
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={{ width: "100%", height: "100%", ...gridStyle }}>
-                {displayedParticipants.map((participant) => (
-                  <ParticipantTile
-                    key={participant.id}
-                    participant={participant}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ width: "100%", height: "100%", ...gridStyle }}>
+              {displayedParticipants.map((participant) => (
+                <ParticipantTile
+                  key={participant.id}
+                  participant={participant}
+                />
+              ))}
+            </div>
+          )}
 
           {chatOpen && (
             <MeetingChatPanel
@@ -918,6 +944,11 @@ export default function MeetingRoomPage() {
           onToggleScreenShare={handleToggleScreenShare}
           onToggleParticipants={toggleParticipantsPanel}
           onLeave={() => navigate(`/room/${roomCode}/summary`)}
+          whiteboardActive={whiteboardActive}
+          onToggleWhiteboard={() => setWhiteboardActive((prev) => !prev)}
+          isWhiteboardAllowed={Boolean(screenShareParticipant)}
+          isHandRaised={raisedHands.has(currentUser?.id) || raisedHands.has(currentUser?.email)}
+          onToggleRaiseHand={toggleRaiseHand}
         />
       </div>
 
