@@ -99,6 +99,12 @@ export const playNotificationBeep = async (
       return true;
     }
 
+    if (kind === "raise-hand") {
+      route(base, { frequency: 523.25, duration: 0.1, peak: 0.1 });
+      route(base + 0.1, { frequency: 659.25, duration: 0.15, peak: 0.1 });
+      return true;
+    }
+
     scheduleBeep(ctx, base, { frequency: 880, duration: 0.1 });
     return true;
   } catch {

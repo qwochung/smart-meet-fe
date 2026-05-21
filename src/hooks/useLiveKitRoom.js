@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
+import { playNotificationBeep } from '../utils/notificationSound';
 
 const buildParticipantStream = (participant) => {
   const stream = new MediaStream();
@@ -66,6 +67,8 @@ export const useLiveKitRoom = () => {
   const [connectionState, setConnectionState] = useState('idle');
   const [error, setError] = useState(null);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [raisedHands, setRaisedHands] = useState(new Set());
+  const raisedHandsRef = useRef(new Set());
 
   const syncParticipants = useCallback((activeRoom) => {
     if (!activeRoom) {
@@ -100,8 +103,27 @@ export const useLiveKitRoom = () => {
     setConnectionState('connecting');
     setError(null);
 
-    activeRoom.on(RoomEvent.ParticipantConnected, () => syncParticipants(activeRoom));
-    activeRoom.on(RoomEvent.ParticipantDisconnected, () => syncParticipants(activeRoom));
+    activeRoom.on(RoomEvent.ParticipantConnected, (participant) => {
+      syncParticipants(activeRoom);
+      const myId = activeRoom.localParticipant.identity || activeRoom.localParticipant.sid;
+      if (raisedHandsRef.current.has(myId) && participant.identity) {
+        const payload = new TextEncoder().encode(JSON.stringify({ type: 'HAND_TOGGLE', state: true }));
+        activeRoom.localParticipant.publishData(payload, { 
+          reliable: true, 
+          destinationIdentities: [participant.identity] 
+        }).catch(() => {});
+      }
+    });
+    activeRoom.on(RoomEvent.ParticipantDisconnected, (participant) => {
+      syncParticipants(activeRoom);
+      const id = participant?.identity || participant?.sid;
+      setRaisedHands((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        raisedHandsRef.current = next;
+        return next;
+      });
+    });
     activeRoom.on(RoomEvent.TrackSubscribed, () => syncParticipants(activeRoom));
     activeRoom.on(RoomEvent.TrackUnsubscribed, () => syncParticipants(activeRoom));
     activeRoom.on(RoomEvent.TrackMuted, () => syncParticipants(activeRoom));
@@ -111,6 +133,35 @@ export const useLiveKitRoom = () => {
     activeRoom.on(RoomEvent.Disconnected, () => {
       setConnectionState('disconnected');
       syncParticipants(null);
+      setRaisedHands(new Set());
+      raisedHandsRef.current = new Set();
+    });
+
+    activeRoom.on(RoomEvent.DataReceived, (payload, participant) => {
+      try {
+        const data = JSON.parse(new TextDecoder().decode(payload));
+        if (data.type === 'HAND_TOGGLE') {
+          const id = participant?.identity || participant?.sid;
+          if (!id) return;
+          
+          if (data.state && !raisedHandsRef.current.has(id)) {
+            playNotificationBeep("raise-hand");
+          }
+
+          setRaisedHands((prev) => {
+            const next = new Set(prev);
+            if (data.state) {
+              next.add(id);
+            } else {
+              next.delete(id);
+            }
+            raisedHandsRef.current = next;
+            return next;
+          });
+        }
+      } catch (err) {
+        // ignore
+      }
     });
 
     try {
@@ -146,6 +197,8 @@ export const useLiveKitRoom = () => {
     setRoom(null);
     setParticipants([]);
     setConnectionState('idle');
+    setRaisedHands(new Set());
+    raisedHandsRef.current = new Set();
   }, []);
 
   const toggleMicrophone = useCallback(async () => {
@@ -187,6 +240,30 @@ export const useLiveKitRoom = () => {
     return nextEnabled;
   }, [syncParticipants]);
 
+  const toggleRaiseHand = useCallback(async () => {
+    const activeRoom = roomRef.current;
+    if (!activeRoom) return false;
+
+    const myId = activeRoom.localParticipant.identity || activeRoom.localParticipant.sid;
+    const isRaised = !raisedHandsRef.current.has(myId);
+
+    setRaisedHands((prev) => {
+      const next = new Set(prev);
+      if (isRaised) next.add(myId); else next.delete(myId);
+      raisedHandsRef.current = next;
+      return next;
+    });
+
+    try {
+      const payload = new TextEncoder().encode(JSON.stringify({ type: 'HAND_TOGGLE', state: isRaised }));
+      await activeRoom.localParticipant.publishData(payload, { reliable: true });
+    } catch (err) {
+      console.error('Failed to publish hand toggle data', err);
+    }
+    
+    return isRaised;
+  }, []);
+
   useEffect(() => {
     return () => {
       roomRef.current?.disconnect();
@@ -206,8 +283,10 @@ export const useLiveKitRoom = () => {
       toggleCamera,
       toggleScreenShare,
       isScreenSharing,
+      raisedHands,
+      toggleRaiseHand,
       isConnected: connectionState === 'connected',
     }),
-    [room, participants, connectionState, error, connect, disconnect, toggleMicrophone, toggleCamera, toggleScreenShare, isScreenSharing]
+    [room, participants, connectionState, error, connect, disconnect, toggleMicrophone, toggleCamera, toggleScreenShare, isScreenSharing, raisedHands, toggleRaiseHand]
   );
 };
