@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const SAMPLE_RATE = 16000;
 const CHUNK_INTERVAL_MS = 5000;
 const OVERLAP_MS = 1000;
-const SILENCE_THRESHOLD = 0.01;
+const SILENCE_THRESHOLD = 0.055;
 const SILENCE_DURATION_MS = 800;
 
 // Float32 → Int16 PCM
@@ -56,6 +56,11 @@ const getRMS = (float32) => {
   return Math.sqrt(sum / float32.length);
 };
 
+/**
+ * State Machine cho VAD (Voice Activity Detection):
+ * IDLE (Im lặng) -> SPEAKING (Đang nói) -> HOLDING (Chờ im lặng 800ms) -> IDLE
+ */
+
 export const useAudioCapture = ({
   enabled = false,
   participantId, // khớp AudioChunkRequest.participantId
@@ -73,14 +78,19 @@ export const useAudioCapture = ({
   const processorRef = useRef(null);
   const sourceRef = useRef(null);
 
-  const pcmBufferRef = useRef([]);
+  // Cờ state machine: true khi đang có phiên ghi âm (SPEAKING hoặc HOLDING)
+  // false khi đang ở trạng thái IDLE (im lặng)
+  const isRecordingSessionRef = useRef(false);
+
+  const pcmBufferRef = useRef([]); // Dữ liệu âm thanh đang thu (chỉ khi isRecordingSessionRef === true)
   const overlapBufferRef = useRef([]);
   const chunkIndexRef = useRef(0);
   const chunkTimerRef = useRef(null);
   const recordStartMsRef = useRef(0); // absolute ms timestamp khi bắt đầu chunk
-  const silenceTimerRef = useRef(null);
-  const isVoiceActiveRef = useRef(false);
+  const silenceTimerRef = useRef(null); // đếm ngược 800ms chờ im lặng
+  const isVoiceActiveRef = useRef(false); // theo dõi sự thay đổi nguồn gốc
 
+  // Dừng thu âm: dọn dẹp mọi thứ
   const stopCapture = useCallback(() => {
     if (chunkTimerRef.current) {
       clearInterval(chunkTimerRef.current);
@@ -106,6 +116,11 @@ export const useAudioCapture = ({
     setAudioLevel(0);
   }, []);
 
+  /**
+   * Flush một chunk âm thanh (gửi qua STOMP)
+   * CHỈ được gọi khi đang có session ghi âm (isRecordingSessionRef === true)
+   * và có dữ liệu trong buffer.
+   */
   const flushChunk = useCallback(async () => {
     const buffer = pcmBufferRef.current;
     if (buffer.length === 0) return;
@@ -128,6 +143,7 @@ export const useAudioCapture = ({
     overlapBufferRef.current = buffer.slice(-overlapSamples);
     pcmBufferRef.current = [];
     recordStartMsRef.current = Date.now(); // reset cho chunk tiếp theo
+    console.group(`🚀 [ASR AudioCapture] Gửi Chunk #${chunkIndexRef.current}`);
 
     onChunk?.({
       audioDataBase64: base64,
@@ -142,6 +158,7 @@ export const useAudioCapture = ({
     });
 
     chunkIndexRef.current += 1;
+    console.groupEnd();
   }, [onChunk, participantId, participantName, roomId]);
 
   const startCapture = useCallback(async () => {
@@ -175,14 +192,40 @@ export const useAudioCapture = ({
         const input = e.inputBuffer.getChannelData(0);
         const copy = new Float32Array(input.length);
         copy.set(input);
-        pcmBufferRef.current.push(...copy);
 
+
+        // Tính RMS để phát hiện giọng nói
         const rms = getRMS(copy);
         setAudioLevel(rms);
-
+// THÊM DÒNG NÀY ĐỂ ĐO ĐỘ ỒN PHÒNG CẬU (Xem xong thì xóa đi nhé)
+//         console.log("Mức ồn hiện tại RMS:", rms.toFixed(4));
         const isVoice = rms > SILENCE_THRESHOLD;
-        if (isVoice !== isVoiceActiveRef.current) {
+
+        // VÁ LỖI MẤT TIẾNG: Phải nạp data liên tục nếu phiên ghi âm đang mở!
+        if (isRecordingSessionRef.current) {
+          pcmBufferRef.current.push(...copy);
+        }
+
+        // --- LOGIC STATE MACHINE ---
+        if (!isRecordingSessionRef.current) {
+          // TRẠNG THÁI IDLE: chưa có session
           if (isVoice) {
+            isRecordingSessionRef.current = true;
+            // Vừa mở session là phải push ngay khung hình đầu tiên này
+            pcmBufferRef.current.push(...copy);
+
+            // Hủy timer cũ nếu có
+            if (silenceTimerRef.current) {
+              clearTimeout(silenceTimerRef.current);
+              silenceTimerRef.current = null;
+            }
+            isVoiceActiveRef.current = true;
+            onVoiceActivityChange?.(true);
+          }
+        } else {
+          // TRẠNG THÁI SPEAKING/HOLDING: đang có session
+          if (isVoice) {
+            // Vẫn đang nói -> Xóa timer đếm ngược 800ms (nếu có)
             if (silenceTimerRef.current) {
               clearTimeout(silenceTimerRef.current);
               silenceTimerRef.current = null;
@@ -190,11 +233,20 @@ export const useAudioCapture = ({
             isVoiceActiveRef.current = true;
             onVoiceActivityChange?.(true);
           } else {
-            silenceTimerRef.current = setTimeout(() => {
-              isVoiceActiveRef.current = false;
-              onVoiceActivityChange?.(false);
-              flushChunk();
-            }, SILENCE_DURATION_MS);
+            // Đang im lặng -> Bật đếm ngược
+            // VÁ LỖI SPAM: CHỈ tạo timer mới nếu chưa có timer nào đang chạy!
+            if (!silenceTimerRef.current) {
+              silenceTimerRef.current = setTimeout(() => {
+                // Hết 800ms -> Đóng cửa session
+                isRecordingSessionRef.current = false;
+                isVoiceActiveRef.current = false;
+                onVoiceActivityChange?.(false);
+
+                flushChunk();
+
+                silenceTimerRef.current = null; // Đừng quên reset biến này!
+              }, SILENCE_DURATION_MS);
+            }
           }
         }
       };
@@ -202,8 +254,12 @@ export const useAudioCapture = ({
       source.connect(processor);
       processor.connect(ctx.destination);
 
+      // --- SỬA SLIDING WINDOW TIMER (setInterval 5s) ---
+      // CHỈ gọi flushChunk() NẾU đang có session và có data
       chunkTimerRef.current = setInterval(() => {
-        if (pcmBufferRef.current.length > 0) flushChunk();
+        if (isRecordingSessionRef.current && pcmBufferRef.current.length > 0) {
+          flushChunk();
+        }
       }, CHUNK_INTERVAL_MS);
 
       setIsCapturing(true);
