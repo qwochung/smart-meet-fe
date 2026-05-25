@@ -47,10 +47,12 @@ export default function MeetingControlBar({
   micActive,
   videoActive,
   screenSharingActive,
+  asrActive,
   mediaLoading,
   onToggleMic,
   onToggleVideo,
   onToggleScreenShare,
+  onToggleAsr,
   onToggleParticipants,
   onLeave,
   whiteboardActive,
@@ -110,7 +112,12 @@ export default function MeetingControlBar({
           }}
         />
 
-        <ControlButton title="Ghi hình" disabled>
+        <ControlButton
+          active={asrActive}
+          title={asrActive ? "Tắt ghi âm" : "Bật ghi âm"}
+          onClick={onToggleAsr}
+          disabled={mediaLoading}
+        >
           <span style={{ position: "relative", display: "flex" }}>
             <Disc size={16} />
             <span
@@ -121,7 +128,7 @@ export default function MeetingControlBar({
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: "#ef4444",
+                background: asrActive ? "#22c55e" : "#ef4444",
                 border: "1.5px solid #0d1017",
               }}
             />

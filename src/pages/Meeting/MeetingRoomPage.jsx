@@ -33,6 +33,7 @@ import {
 } from "../../utils/notificationSound.js";
 
 import WhiteboardOverlay from "./WhiteboardOverlay";
+import { useASRPipeline } from "../../hooks/useASRPipeline";
 
 export default function MeetingRoomPage() {
   const currentUser = getStoredUser();
@@ -488,12 +489,18 @@ export default function MeetingRoomPage() {
           name: match.name || lkp.name,
           avatar: match.avatar || lkp.avatar,
           isHost: match.isHost !== undefined ? match.isHost : lkp.isHost,
-          isHandRaised: raisedHands.has(lkp.identity) || raisedHands.has(lkp.id) || raisedHands.has(lkp.sid),
+          isHandRaised:
+            raisedHands.has(lkp.identity) ||
+            raisedHands.has(lkp.id) ||
+            raisedHands.has(lkp.sid),
         };
       }
       return {
         ...lkp,
-        isHandRaised: raisedHands.has(lkp.identity) || raisedHands.has(lkp.id) || raisedHands.has(lkp.sid),
+        isHandRaised:
+          raisedHands.has(lkp.identity) ||
+          raisedHands.has(lkp.id) ||
+          raisedHands.has(lkp.sid),
       };
     });
 
@@ -505,10 +512,16 @@ export default function MeetingRoomPage() {
       );
     });
 
-    return [...enrichedLivekitList, ...missingFromLivekit.map(p => ({
-      ...p,
-      isHandRaised: raisedHands.has(p.identity) || raisedHands.has(p.id) || raisedHands.has(p.sid),
-    }))];
+    return [
+      ...enrichedLivekitList,
+      ...missingFromLivekit.map((p) => ({
+        ...p,
+        isHandRaised:
+          raisedHands.has(p.identity) ||
+          raisedHands.has(p.id) ||
+          raisedHands.has(p.sid),
+      })),
+    ];
   }, [hasLiveKitSession, livekitParticipants, gridParticipants, raisedHands]);
 
   const visibleParticipants = displayedParticipants.filter((p) => {
@@ -633,6 +646,23 @@ export default function MeetingRoomPage() {
     () => getParticipantGridStyle(participantCount),
     [participantCount],
   );
+
+  const [asrEnabled, setAsrEnabled] = useState(false);
+
+  const {
+    transcriptSegments,
+    isCapturing,
+    isConnected,
+    audioLevel,
+    voiceActive,
+    clearTranscript,
+    getFullTranscript,
+  } = useASRPipeline({
+    enabled: asrEnabled && micActive,
+    participantId: String(currentUser?.id || ""),
+    participantName: currentUser?.name || currentUser?.email || "",
+    roomId: roomCode,
+  });
 
   if (isChecking) {
     return (
@@ -938,16 +968,21 @@ export default function MeetingRoomPage() {
           micActive={micActive}
           videoActive={videoActive}
           screenSharingActive={isScreenSharing}
+          asrActive={asrEnabled}
           mediaLoading={mediaLoading || livekitConnectionState === "connecting"}
           onToggleMic={handleToggleMic}
           onToggleVideo={handleToggleVideo}
           onToggleScreenShare={handleToggleScreenShare}
+          onToggleAsr={() => setAsrEnabled((prev) => !prev)}
           onToggleParticipants={toggleParticipantsPanel}
           onLeave={() => navigate(`/room/${roomCode}/summary`)}
           whiteboardActive={whiteboardActive}
           onToggleWhiteboard={() => setWhiteboardActive((prev) => !prev)}
           isWhiteboardAllowed={Boolean(screenShareParticipant)}
-          isHandRaised={raisedHands.has(currentUser?.id) || raisedHands.has(currentUser?.email)}
+          isHandRaised={
+            raisedHands.has(currentUser?.id) ||
+            raisedHands.has(currentUser?.email)
+          }
           onToggleRaiseHand={toggleRaiseHand}
         />
       </div>
