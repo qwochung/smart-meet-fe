@@ -147,6 +147,7 @@ export const useASRPipeline = ({
         sampleRate: chunkData.sampleRate || 16000,
         channels: chunkData.channels || 1,
         audioDataBase64: chunkData.audioDataBase64,
+        isForceCut: chunkData.isForceCut || false,
       });
 
       const client = stompClientRef.current;
@@ -169,7 +170,7 @@ export const useASRPipeline = ({
   );
 
   // ─── Audio capture ─────────────────────────────────────────────────────────
-  const { isCapturing, hasPermission, audioLevel, flushNow } = useAudioCapture({
+  const { isCapturing, hasPermission, audioLevel } = useAudioCapture({
     enabled,
     participantId: String(participantId || ""),
     participantName: participantName || "",
@@ -202,6 +203,5 @@ export const useASRPipeline = ({
     voiceActive,
     clearTranscript,
     getFullTranscript,
-    flushNow,
   };
 };
