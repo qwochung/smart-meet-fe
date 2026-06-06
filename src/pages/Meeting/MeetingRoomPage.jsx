@@ -62,8 +62,9 @@ export default function MeetingRoomPage() {
   const sessionRole = activeSession?.role;
   const isCreatorEntry =
     sessionRole === "HOST" || activeSession?.created === true;
-  const livekitUrl =
+  const livekitUrlRaw =
     activeSession?.livekitHost || activeSession?.livekitUrl || "";
+  const livekitUrl = livekitUrlRaw ? livekitUrlRaw.replace(/^http/i, 'ws') : "";
   const livekitToken =
     activeSession?.livekitToken || activeSession?.token || "";
   const hasLiveKitSession = Boolean(livekitUrl && livekitToken);

@@ -18,6 +18,7 @@ export const buildAudioChunkPayload = ({
   sampleRate = 16000,
   channels = 1,
   audioDataBase64,
+  isForceCut = false,
 }) => ({
   roomId,
   participantId, // String — dùng userId từ JWT
@@ -28,6 +29,7 @@ export const buildAudioChunkPayload = ({
   sampleRate,
   channels,
   audioDataBase64, // Base64 WAV — BE tự decode
+  isForceCut, // Boolean — BE dùng để quyết định force finalize hay không
 });
 
 // Dedup overlap — giữ nguyên logic
