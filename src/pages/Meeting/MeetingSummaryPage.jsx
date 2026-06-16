@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Download, FileText, Mic, Sparkles, Users } from 'lucide-react';
 import { Button, Card } from '../../components/common';
+import { transcriptService } from '../../services/transcriptService';
 
 const highlights = [
   'Độ trễ API là hạng mục ưu tiên theo dõi hàng đầu cho đội backend.',
@@ -14,19 +16,50 @@ const actionItems = [
   { task: 'Chuẩn bị bản nháp truyền thông phát hành', owner: 'Mark Thompson', due: '2026-04-14' },
 ];
 
-const transcriptSnippets = [
-  {
-    speaker: 'Sarah',
-    text: 'Hãy kết thúc bằng checklist phát hành và xác nhận người phụ trách cho từng việc theo dõi.',
-  },
-  {
-    speaker: 'David',
-    text: 'Tôi sẽ gửi báo cáo benchmark độ trễ trước trưa ngày mai.',
-  },
-];
-
 export default function MeetingSummaryPage() {
   const { roomCode = 'product-sync' } = useParams();
+  const [finalTranscript, setFinalTranscript] = useState(null);
+  const [finalizeStatus, setFinalizeStatus] = useState('PROCESSING');
+
+  useEffect(() => {
+    let cancelled = false;
+    let intervalId;
+
+    const pollFinal = async () => {
+      try {
+        const data = await transcriptService.getFinalTranscript(roomCode);
+        if (cancelled) return;
+        setFinalTranscript(data);
+        if (data?.status === 'FINAL' || data?.status === 'FAILED') {
+          setFinalizeStatus(data.status);
+          if (intervalId) clearInterval(intervalId);
+        }
+      } catch (err) {
+        console.warn('[Summary] poll final transcript failed:', err);
+      }
+    };
+
+    const start = async () => {
+      try {
+        await transcriptService.finalizeTranscript(roomCode);
+      } catch (err) {
+        console.warn('[Summary] finalize transcript failed:', err);
+      }
+      await pollFinal();
+      intervalId = setInterval(pollFinal, 2000);
+    };
+
+    start();
+
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [roomCode]);
+
+  const transcriptSegments = Array.isArray(finalTranscript?.segments)
+    ? finalTranscript.segments
+    : [];
 
   return (
     <div className="min-h-full bg-slate-50 px-4 py-6 text-slate-900 md:px-10 lg:px-16">
@@ -52,7 +85,9 @@ export default function MeetingSummaryPage() {
               </article>
               <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Bản ghi</p>
-                <p className="mt-2 text-2xl font-bold">Sẵn sàng</p>
+                <p className="mt-2 text-2xl font-bold">
+                  {finalizeStatus === 'FINAL' ? 'Sẵn sàng' : 'Đang xử lý'}
+                </p>
               </article>
             </div>
           </div>
@@ -89,14 +124,28 @@ export default function MeetingSummaryPage() {
               </article>
 
               <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-sm font-semibold text-slate-900">Trích đoạn bản ghi</p>
+                <p className="text-sm font-semibold text-slate-900">Biên bản đã merge</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {finalizeStatus === 'PROCESSING' && 'Đang xử lý biên bản cuối cuộc họp...'}
+                  {finalizeStatus === 'FINAL' && 'Biên bản chính thức đã sẵn sàng.'}
+                  {finalizeStatus === 'FAILED' && 'Không thể tạo biên bản. Vui lòng thử lại sau.'}
+                </p>
                 <div className="mt-3 space-y-3">
-                  {transcriptSnippets.map((snippet) => (
-                    <div key={snippet.speaker} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                      <p className="font-semibold text-slate-900">{snippet.speaker}</p>
-                      <p className="mt-1 leading-relaxed">{snippet.text}</p>
-                    </div>
-                  ))}
+                  {transcriptSegments.length === 0 ? (
+                    <p className="text-sm text-slate-500">Chưa có nội dung biên bản.</p>
+                  ) : (
+                    transcriptSegments.map((segment) => (
+                      <div
+                        key={`${segment.orderIndex}-${segment.sourceChunkId}`}
+                        className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
+                      >
+                        <p className="font-semibold text-slate-900">
+                          {segment.participantName || segment.participantId}
+                        </p>
+                        <p className="mt-1 leading-relaxed">{segment.content}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </article>
             </div>

@@ -69,6 +69,8 @@ export const useLiveKitRoom = () => {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [raisedHands, setRaisedHands] = useState(new Set());
   const raisedHandsRef = useRef(new Set());
+  const [roomAsrActive, setRoomAsrActive] = useState(false);
+  const roomAsrActiveRef = useRef(false);
 
   const syncParticipants = useCallback((activeRoom) => {
     if (!activeRoom) {
@@ -113,6 +115,13 @@ export const useLiveKitRoom = () => {
           destinationIdentities: [participant.identity] 
         }).catch(() => {});
       }
+      if (roomAsrActiveRef.current && participant.identity) {
+        const payload = new TextEncoder().encode(JSON.stringify({ type: 'ASR_TOGGLE', state: true }));
+        activeRoom.localParticipant.publishData(payload, {
+          reliable: true,
+          destinationIdentities: [participant.identity],
+        }).catch(() => {});
+      }
     });
     activeRoom.on(RoomEvent.ParticipantDisconnected, (participant) => {
       syncParticipants(activeRoom);
@@ -135,6 +144,8 @@ export const useLiveKitRoom = () => {
       syncParticipants(null);
       setRaisedHands(new Set());
       raisedHandsRef.current = new Set();
+      setRoomAsrActive(false);
+      roomAsrActiveRef.current = false;
     });
 
     activeRoom.on(RoomEvent.DataReceived, (payload, participant) => {
@@ -158,6 +169,11 @@ export const useLiveKitRoom = () => {
             raisedHandsRef.current = next;
             return next;
           });
+        }
+        if (data.type === 'ASR_TOGGLE') {
+          const nextActive = Boolean(data.state);
+          roomAsrActiveRef.current = nextActive;
+          setRoomAsrActive(nextActive);
         }
       } catch (err) {
         // ignore
@@ -199,6 +215,8 @@ export const useLiveKitRoom = () => {
     setConnectionState('idle');
     setRaisedHands(new Set());
     raisedHandsRef.current = new Set();
+    setRoomAsrActive(false);
+    roomAsrActiveRef.current = false;
   }, []);
 
   const toggleMicrophone = useCallback(async () => {
@@ -239,6 +257,24 @@ export const useLiveKitRoom = () => {
     syncParticipants(activeRoom);
     return nextEnabled;
   }, [syncParticipants]);
+
+  const broadcastAsrToggle = useCallback(async (state) => {
+    const activeRoom = roomRef.current;
+    if (!activeRoom) return false;
+
+    const nextActive = Boolean(state);
+    roomAsrActiveRef.current = nextActive;
+    setRoomAsrActive(nextActive);
+
+    try {
+      const payload = new TextEncoder().encode(JSON.stringify({ type: 'ASR_TOGGLE', state: nextActive }));
+      await activeRoom.localParticipant.publishData(payload, { reliable: true });
+    } catch (err) {
+      console.error('Failed to publish ASR toggle data', err);
+    }
+
+    return nextActive;
+  }, []);
 
   const toggleRaiseHand = useCallback(async () => {
     const activeRoom = roomRef.current;
@@ -285,8 +321,10 @@ export const useLiveKitRoom = () => {
       isScreenSharing,
       raisedHands,
       toggleRaiseHand,
+      roomAsrActive,
+      broadcastAsrToggle,
       isConnected: connectionState === 'connected',
     }),
-    [room, participants, connectionState, error, connect, disconnect, toggleMicrophone, toggleCamera, toggleScreenShare, isScreenSharing, raisedHands, toggleRaiseHand]
+    [room, participants, connectionState, error, connect, disconnect, toggleMicrophone, toggleCamera, toggleScreenShare, isScreenSharing, raisedHands, toggleRaiseHand, roomAsrActive, broadcastAsrToggle]
   );
 };

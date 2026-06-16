@@ -16,6 +16,7 @@ const getAudioConstraints = () => ({
 
 export const useAudioCapture = ({
                                   enabled = false,
+                                  micActive = true,
                                   participantId,
                                   participantName,
                                   roomId,
@@ -38,6 +39,37 @@ export const useAudioCapture = ({
   onChunkRef.current = onChunk;
   const onVoiceActivityChangeRef = useRef(onVoiceActivityChange);
   onVoiceActivityChangeRef.current = onVoiceActivityChange;
+  const micActiveRef = useRef(micActive);
+  micActiveRef.current = micActive;
+  const vadListeningRef = useRef(false);
+
+  const syncMicState = useCallback(async () => {
+    const vad = micVADRef.current;
+    if (!vad) return;
+
+    try {
+      if (micActiveRef.current) {
+        if (!vadListeningRef.current) {
+          await vad.start();
+          vadListeningRef.current = true;
+        }
+      } else {
+        if (forceCutTimerRef.current) {
+          clearTimeout(forceCutTimerRef.current);
+          forceCutTimerRef.current = null;
+        }
+        isRecordingRef.current = false;
+        forceCutRef.current = false;
+        if (vadListeningRef.current) {
+          await vad.pause();
+          vadListeningRef.current = false;
+        }
+        setAudioLevel(0);
+      }
+    } catch (err) {
+      console.warn("[AudioCapture] mic sync failed:", err);
+    }
+  }, []);
 
   const flushChunk = useCallback(
     async (audioData, isForceCut) => {
@@ -73,7 +105,7 @@ export const useAudioCapture = ({
       });
 
       chunkIndexRef.current += 1;
-      recordStartMsRef.current = Date.now();
+      recordStartMsRef.current = 0;
     },
     [participantId, participantName, roomId],
   );
@@ -86,7 +118,11 @@ export const useAudioCapture = ({
     if (!vad) return;
     forceCutRef.current = true;
     await vad.pause();
-    await vad.start();
+    vadListeningRef.current = false;
+    if (micActiveRef.current) {
+      await vad.start();
+      vadListeningRef.current = true;
+    }
   }, []);
 
   const handleForceCutRef = useRef(handleForceCut);
@@ -114,7 +150,7 @@ export const useAudioCapture = ({
         forceCutTimerRef.current = null;
       }
 
-      isRecordingRef.current =  false;
+      isRecordingRef.current = false;
 
       const isForceCut = forceCutRef.current;
       forceCutRef.current = false;
@@ -129,11 +165,11 @@ export const useAudioCapture = ({
     };
 
     const startCapture = async () => {
-      console.log("[AudioCapture] startCapture called", {enabled, participantId, roomId,});
+      console.log("[AudioCapture] startCapture called", {enabled, participantId, roomId});
 
-      if (!enabled || !participantId || !roomId){
-        console.warn("[AudioCapture] skipped", {enabled, participantId, roomId,});
-        return
+      if (!enabled || !participantId || !roomId) {
+        console.warn("[AudioCapture] skipped", {enabled, participantId, roomId});
+        return;
       }
 
       try {
@@ -163,7 +199,7 @@ export const useAudioCapture = ({
         });
         setHasPermission(true);
         micVADRef.current = vad;
-        vad.start();
+        await syncMicState();
         setIsCapturing(true);
       } catch (err) {
         console.error("[AudioCapture] Failed:", err);
@@ -189,6 +225,7 @@ export const useAudioCapture = ({
         }
         micVADRef.current = null;
       }
+      vadListeningRef.current = false;
       setIsCapturing(false);
       setAudioLevel(0);
     };
@@ -198,7 +235,12 @@ export const useAudioCapture = ({
     return () => {
       stopCapture();
     };
-  }, [enabled, participantId, roomId]);
+  }, [enabled, participantId, roomId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!enabled) return;
+    syncMicState();
+  }, [micActive, enabled, syncMicState]);
 
   return {isCapturing, hasPermission, audioLevel};
 };

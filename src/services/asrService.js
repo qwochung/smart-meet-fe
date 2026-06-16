@@ -5,6 +5,8 @@
 export const STOMP_DESTINATIONS = {
   sendAudio: (roomId) => `/app/ws/rooms/${roomId}/audio`,
   transcript: (roomId) => `/topic/rooms/${roomId}/transcript`,
+  draftTranscript: (roomId) => `/topic/rooms/${roomId}/transcript/draft`,
+  mergedTranscript: (roomId) => `/topic/rooms/${roomId}/transcript/merged`,
 };
 
 // Khớp với AudioChunkRequest.java
