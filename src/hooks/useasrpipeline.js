@@ -4,7 +4,6 @@ import { useAudioCapture } from "./useAudioCapture";
 import {
   STOMP_DESTINATIONS,
   buildAudioChunkPayload,
-  deduplicateOverlap,
 } from "../services/asrService";
 import { tokenStorage } from "../api/tokenStorage";
 import apiConfig from "../configs/apiConfig";
@@ -20,6 +19,7 @@ import apiConfig from "../configs/apiConfig";
  */
 export const useASRPipeline = ({
   enabled = false,
+  micActive = true,
   participantId, // currentUser.id (string hoặc number)
   participantName, // currentUser.name
   roomId,
@@ -63,48 +63,6 @@ export const useASRPipeline = ({
             });
           } catch {}
         });
-
-        // Subscribe nhận transcript
-        subscriptionRef.current = client.subscribe(
-          STOMP_DESTINATIONS.transcript(roomId),
-          (frame) => {
-            try {
-              const data = JSON.parse(frame.body);
-              // BE trả về: { roomId, participantId, participantName, chunkIndex, text }
-              const rawText = data.text || "";
-              const deduped = deduplicateOverlap(lastTextRef.current, rawText);
-
-              if (deduped.trim()) {
-                lastTextRef.current = deduped;
-                const segment = {
-                  chunkIndex: data.chunkIndex,
-                  participantId: data.participantId,
-                  participantName: data.participantName,
-                  rawText: deduped,
-                  isFinal: true,
-                };
-                setTranscriptSegments((prev) => {
-                  const exists = prev.find(
-                    (s) =>
-                      s.chunkIndex === segment.chunkIndex &&
-                      s.participantId === segment.participantId,
-                  );
-                  if (exists)
-                    return prev.map((s) =>
-                      s.chunkIndex === segment.chunkIndex &&
-                      s.participantId === segment.participantId
-                        ? { ...s, ...segment }
-                        : s,
-                    );
-                  return [...prev, segment];
-                });
-                onTranscriptUpdate?.(segment);
-              }
-            } catch (err) {
-              console.warn("[ASR] Transcript parse error:", err);
-            }
-          },
-        );
       },
 
       onDisconnect: () => {
@@ -153,6 +111,7 @@ export const useASRPipeline = ({
       const client = stompClientRef.current;
       if (client?.connected) {
         try {
+          console.log("[ASR] Sending chunk", payload.chunkIndex);
           client.publish({
             destination: STOMP_DESTINATIONS.sendAudio(roomId),
             body: JSON.stringify(payload),
@@ -172,6 +131,7 @@ export const useASRPipeline = ({
   // ─── Audio capture ─────────────────────────────────────────────────────────
   const { isCapturing, hasPermission, audioLevel } = useAudioCapture({
     enabled,
+    micActive,
     participantId: String(participantId || ""),
     participantName: participantName || "",
     roomId,

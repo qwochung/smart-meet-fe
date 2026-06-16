@@ -48,6 +48,7 @@ export default function MeetingControlBar({
   videoActive,
   screenSharingActive,
   asrActive,
+  isHost = false,
   mediaLoading,
   onToggleMic,
   onToggleVideo,
@@ -114,9 +115,17 @@ export default function MeetingControlBar({
 
         <ControlButton
           active={asrActive}
-          title={asrActive ? "Tắt ghi âm" : "Bật ghi âm"}
+          title={
+            !isHost
+              ? asrActive
+                ? "Ghi âm đang bật (chủ phòng điều khiển)"
+                : "Ghi âm đang tắt (chỉ chủ phòng bật được)"
+              : asrActive
+                ? "Tắt ghi âm"
+                : "Bật ghi âm"
+          }
           onClick={onToggleAsr}
-          disabled={mediaLoading}
+          disabled={mediaLoading || !isHost}
         >
           <span style={{ position: "relative", display: "flex" }}>
             <Disc size={16} />
