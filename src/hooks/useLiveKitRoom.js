@@ -71,6 +71,7 @@ export const useLiveKitRoom = () => {
   const raisedHandsRef = useRef(new Set());
   const [roomAsrActive, setRoomAsrActive] = useState(false);
   const roomAsrActiveRef = useRef(false);
+  const [chatMessages, setChatMessages] = useState([]);
 
   const syncParticipants = useCallback((activeRoom) => {
     if (!activeRoom) {
@@ -146,6 +147,7 @@ export const useLiveKitRoom = () => {
       raisedHandsRef.current = new Set();
       setRoomAsrActive(false);
       roomAsrActiveRef.current = false;
+      setChatMessages([]);
     });
 
     activeRoom.on(RoomEvent.DataReceived, (payload, participant) => {
@@ -174,6 +176,17 @@ export const useLiveKitRoom = () => {
           const nextActive = Boolean(data.state);
           roomAsrActiveRef.current = nextActive;
           setRoomAsrActive(nextActive);
+        }
+        if (data.type === 'CHAT_MESSAGE') {
+          const { senderId, senderName, content, sentAt } = data;
+          if (!content || sentAt == null) return;
+
+          setChatMessages((prev) => {
+            if (prev.some((m) => m.senderId === senderId && m.sentAt === sentAt)) {
+              return prev;
+            }
+            return [...prev, { senderId, senderName, content, sentAt }];
+          });
         }
       } catch (err) {
         // ignore
@@ -217,6 +230,38 @@ export const useLiveKitRoom = () => {
     raisedHandsRef.current = new Set();
     setRoomAsrActive(false);
     roomAsrActiveRef.current = false;
+    setChatMessages([]);
+  }, []);
+
+  const sendChatMessage = useCallback(async ({ senderId, senderName, content }) => {
+    const activeRoom = roomRef.current;
+    if (!activeRoom || !String(content || '').trim()) return null;
+
+    const trimmed = String(content).trim();
+    const sentAt = Date.now();
+    const message = { senderId, senderName, content: trimmed, sentAt };
+
+    setChatMessages((prev) => {
+      if (prev.some((m) => m.senderId === senderId && m.sentAt === sentAt)) {
+        return prev;
+      }
+      return [...prev, message];
+    });
+
+    try {
+      const payload = new TextEncoder().encode(JSON.stringify({
+        type: 'CHAT_MESSAGE',
+        senderId,
+        senderName,
+        content: trimmed,
+        sentAt,
+      }));
+      await activeRoom.localParticipant.publishData(payload, { reliable: true });
+    } catch (err) {
+      console.error('Failed to publish chat message', err);
+    }
+
+    return message;
   }, []);
 
   const toggleMicrophone = useCallback(async () => {
@@ -323,8 +368,10 @@ export const useLiveKitRoom = () => {
       toggleRaiseHand,
       roomAsrActive,
       broadcastAsrToggle,
+      chatMessages,
+      sendChatMessage,
       isConnected: connectionState === 'connected',
     }),
-    [room, participants, connectionState, error, connect, disconnect, toggleMicrophone, toggleCamera, toggleScreenShare, isScreenSharing, raisedHands, toggleRaiseHand, roomAsrActive, broadcastAsrToggle]
+    [room, participants, connectionState, error, connect, disconnect, toggleMicrophone, toggleCamera, toggleScreenShare, isScreenSharing, raisedHands, toggleRaiseHand, roomAsrActive, broadcastAsrToggle, chatMessages, sendChatMessage]
   );
 };

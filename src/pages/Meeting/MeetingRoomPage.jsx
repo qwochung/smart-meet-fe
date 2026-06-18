@@ -84,6 +84,8 @@ export default function MeetingRoomPage() {
     toggleRaiseHand,
     roomAsrActive,
     broadcastAsrToggle,
+    chatMessages,
+    sendChatMessage,
   } = useLiveKitRoom();
 
   const initialJoinSettings = location.state?.joinSettings;
@@ -102,6 +104,19 @@ export default function MeetingRoomPage() {
   const [messages, setMessages] = useState(() =>
     createInitialMessages(sessionRole === "HOST"),
   );
+  const displayMessages = useMemo(() => {
+    const liveMessages = (chatMessages || []).map((msg) => ({
+      id: `${msg.senderId}-${msg.sentAt}`,
+      sender: msg.senderName || "Người dùng",
+      time: new Date(msg.sentAt).toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      content: msg.content,
+      isSelf: String(msg.senderId) === String(currentUser?.id),
+    }));
+    return [...messages, ...liveMessages];
+  }, [messages, chatMessages, currentUser?.id]);
   const [joinedAt] = useState(() => {
     const existingSession = roomSessionStorage.get(roomCode);
     if (existingSession?.joinedAt) return existingSession.joinedAt;
@@ -344,10 +359,22 @@ export default function MeetingRoomPage() {
   // Auto-scroll chat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [displayMessages]);
 
-  const sendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
+    const content = message.trim();
+    setMessage("");
+
+    if (hasLiveKitSession) {
+      await sendChatMessage({
+        senderId: String(currentUser?.id || ""),
+        senderName: currentUser?.name || "Bạn",
+        content,
+      });
+      return;
+    }
+
     const now = new Date();
     const time = now.toLocaleTimeString("vi-VN", {
       hour: "2-digit",
@@ -359,11 +386,10 @@ export default function MeetingRoomPage() {
         id: Date.now(),
         sender: currentUser?.name || "Bạn",
         time,
-        content: message.trim(),
+        content,
         isSelf: true,
       },
     ]);
-    setMessage("");
   };
 
   // ─── Toggle mic ─────────────────────────────────────────────────────────────
@@ -967,10 +993,10 @@ export default function MeetingRoomPage() {
 
           {chatOpen && (
             <MeetingChatPanel
-              messages={messages}
+              messages={displayMessages}
               message={message}
               onMessageChange={setMessage}
-              onSendMessage={sendMessage}
+              onSendMessage={handleSendMessage}
               onClose={() => setChatOpen(false)}
               messagesEndRef={messagesEndRef}
             />
