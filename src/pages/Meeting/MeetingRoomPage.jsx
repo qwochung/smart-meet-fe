@@ -34,6 +34,8 @@ import {
 
 import WhiteboardOverlay from "./WhiteboardOverlay";
 import { useASRPipeline } from "../../hooks/useASRPipeline";
+import { useMergedTranscript } from "../../hooks/useMergedTranscript";
+import LiveTranscriptPanel from "./LiveTranscriptPanel";
 
 export default function MeetingRoomPage() {
   const currentUser = getStoredUser();
@@ -80,6 +82,10 @@ export default function MeetingRoomPage() {
     isScreenSharing,
     raisedHands,
     toggleRaiseHand,
+    roomAsrActive,
+    broadcastAsrToggle,
+    chatMessages,
+    sendChatMessage,
   } = useLiveKitRoom();
 
   const initialJoinSettings = location.state?.joinSettings;
@@ -98,6 +104,19 @@ export default function MeetingRoomPage() {
   const [messages, setMessages] = useState(() =>
     createInitialMessages(sessionRole === "HOST"),
   );
+  const displayMessages = useMemo(() => {
+    const liveMessages = (chatMessages || []).map((msg) => ({
+      id: `${msg.senderId}-${msg.sentAt}`,
+      sender: msg.senderName || "Người dùng",
+      time: new Date(msg.sentAt).toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      content: msg.content,
+      isSelf: String(msg.senderId) === String(currentUser?.id),
+    }));
+    return [...messages, ...liveMessages];
+  }, [messages, chatMessages, currentUser?.id]);
   const [joinedAt] = useState(() => {
     const existingSession = roomSessionStorage.get(roomCode);
     if (existingSession?.joinedAt) return existingSession.joinedAt;
@@ -340,10 +359,22 @@ export default function MeetingRoomPage() {
   // Auto-scroll chat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [displayMessages]);
 
-  const sendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
+    const content = message.trim();
+    setMessage("");
+
+    if (hasLiveKitSession) {
+      await sendChatMessage({
+        senderId: String(currentUser?.id || ""),
+        senderName: currentUser?.name || "Bạn",
+        content,
+      });
+      return;
+    }
+
     const now = new Date();
     const time = now.toLocaleTimeString("vi-VN", {
       hour: "2-digit",
@@ -355,11 +386,10 @@ export default function MeetingRoomPage() {
         id: Date.now(),
         sender: currentUser?.name || "Bạn",
         time,
-        content: message.trim(),
+        content,
         isSelf: true,
       },
     ]);
-    setMessage("");
   };
 
   // ─── Toggle mic ─────────────────────────────────────────────────────────────
@@ -649,6 +679,15 @@ export default function MeetingRoomPage() {
   );
 
   const [asrEnabled, setAsrEnabled] = useState(false);
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isHost) {
+      setAsrEnabled(roomAsrActive);
+    }
+  }, [roomAsrActive, isHost]);
+
+  const effectiveAsrEnabled = isHost ? asrEnabled : roomAsrActive;
 
   const {
     transcriptSegments,
@@ -659,11 +698,32 @@ export default function MeetingRoomPage() {
     clearTranscript,
     getFullTranscript,
   } = useASRPipeline({
-    enabled: asrEnabled && micActive,
+    enabled: effectiveAsrEnabled,
+    micActive,
     participantId: String(currentUser?.id || ""),
     participantName: currentUser?.name || currentUser?.email || "",
     roomId: roomCode,
   });
+
+  const { mergedSegments, mergedFullText } = useMergedTranscript({
+    enabled: effectiveAsrEnabled,
+    roomId: roomCode,
+  });
+
+  useEffect(() => {
+    if (effectiveAsrEnabled) {
+      setTranscriptOpen(true);
+    }
+  }, [effectiveAsrEnabled]);
+
+  const handleToggleAsr = async () => {
+    if (!isHost) return;
+    const next = !asrEnabled;
+    setAsrEnabled(next);
+    if (hasLiveKitSession) {
+      await broadcastAsrToggle(next);
+    }
+  };
 
   if (isChecking) {
     return (
@@ -933,10 +993,10 @@ export default function MeetingRoomPage() {
 
           {chatOpen && (
             <MeetingChatPanel
-              messages={messages}
+              messages={displayMessages}
               message={message}
               onMessageChange={setMessage}
-              onSendMessage={sendMessage}
+              onSendMessage={handleSendMessage}
               onClose={() => setChatOpen(false)}
               messagesEndRef={messagesEndRef}
             />
@@ -962,6 +1022,14 @@ export default function MeetingRoomPage() {
               onClose={() => setSummaryOpen(false)}
             />
           )}
+
+          {effectiveAsrEnabled && transcriptOpen && (
+            <LiveTranscriptPanel
+              segments={mergedSegments}
+              fullText={mergedFullText}
+              onClose={() => setTranscriptOpen(false)}
+            />
+          )}
         </main>
 
         <MeetingControlBar
@@ -969,12 +1037,13 @@ export default function MeetingRoomPage() {
           micActive={micActive}
           videoActive={videoActive}
           screenSharingActive={isScreenSharing}
-          asrActive={asrEnabled}
+          asrActive={effectiveAsrEnabled}
+          isHost={isHost}
           mediaLoading={mediaLoading || livekitConnectionState === "connecting"}
           onToggleMic={handleToggleMic}
           onToggleVideo={handleToggleVideo}
           onToggleScreenShare={handleToggleScreenShare}
-          onToggleAsr={() => setAsrEnabled((prev) => !prev)}
+          onToggleAsr={handleToggleAsr}
           onToggleParticipants={toggleParticipantsPanel}
           onLeave={() => navigate(`/minutes/${roomCode}/summary`)}
           whiteboardActive={whiteboardActive}
