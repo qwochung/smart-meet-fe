@@ -1,28 +1,79 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarDays, FileText, Filter, Plus, Search } from 'lucide-react';
 import { Button, Card, DataTable } from '../../components/common';
-
-const minutesData = [
-  { id: 'm1', title: 'Lập kế hoạch Sprint - Đội Sản phẩm', date: '2026-04-08', status: 'Hoàn tất', summary: 'Roadmap Q2, phân công người phụ trách, tinh chỉnh backlog.' },
-  { id: 'm2', title: 'Đánh giá demo với khách hàng', date: '2026-04-06', status: 'Bản nháp', summary: 'Tổng hợp phản hồi từ khách hàng doanh nghiệp tiềm năng.' },
-  { id: 'm3', title: 'Đồng bộ kỹ thuật hằng tuần', date: '2026-04-04', status: 'Hoàn tất', summary: 'Cập nhật hạ tầng và kiểm tra sẵn sàng phát hành.' },
-];
+import { roomService } from '../../services/roomService';
 
 export default function MinutesListPage() {
+  const [minutes, setMinutes] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterDate, setFilterDate] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchMinutes = async () => {
+      setLoading(true);
+      try {
+        const response = await roomService.getRoomMinutes({
+          name: searchQuery || undefined,
+          date: filterDate || undefined,
+        });
+        const data = Array.isArray(response) ? response : (response?.data || []);
+        setMinutes(data);
+      } catch (error) {
+        console.error('Error fetching room minutes:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      fetchMinutes();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, filterDate]);
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'ENDED':
+        return <span className="rounded-full px-2.5 py-1 text-xs font-medium bg-emerald-50 text-emerald-700">Hoàn tất</span>;
+      case 'ACTIVE':
+        return <span className="rounded-full px-2.5 py-1 text-xs font-medium bg-sky-50 text-sky-700">Đang diễn ra</span>;
+      case 'WAITING':
+        return <span className="rounded-full px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-700">Đang chờ</span>;
+      default:
+        return <span className="rounded-full px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-700">{status}</span>;
+    }
+  };
+
   const columns = [
-    { key: 'title', label: 'Cuộc họp' },
-    { key: 'date', label: 'Ngày', render: (row) => <span className="text-slate-600">{row.date}</span> },
+    { key: 'name', label: 'Cuộc họp' },
     {
-      key: 'status',
-      label: 'Trạng thái',
+      key: 'expiresAt',
+      label: 'Ngày',
       render: (row) => (
-        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${row.status === 'Hoàn tất' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-          {row.status}
+        <span className="text-slate-600">
+          {row.expiresAt ? new Date(row.expiresAt).toLocaleDateString('vi-VN') : 'N/A'}
         </span>
       ),
     },
-    { key: 'summary', label: 'Xem nhanh' },
-    { key: 'action', label: '', render: (row) => <Link to={`/minutes/${row.id}`} className="text-primary-600 hover:text-primary-700">Xem</Link> },
+    {
+      key: 'status',
+      label: 'Trạng thái',
+      render: (row) => getStatusBadge(row.status),
+    },
+    { key: 'description', label: 'Mô tả' },
+    {
+      key: 'action',
+      label: '',
+      render: (row) =>
+        row.status === 'ENDED' ? (
+          <Link to={`/minutes/${row.roomCode}/summ`} className="text-primary-600 hover:text-primary-700">
+            Xem
+          </Link>
+        ) : null,
+    },
   ];
 
   return (
@@ -32,20 +83,35 @@ export default function MinutesListPage() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Biên bản họp</h1>
           <p className="mt-1 text-sm text-slate-500">Theo dõi, tìm kiếm và xuất biên bản từ tất cả cuộc họp.</p>
         </div>
-        <Button icon={Plus}>Tạo biên bản mới</Button>
+        <Link to="/meetings/new">
+          <Button icon={Plus}>Tạo cuộc họp mới</Button>
+        </Link>
       </div>
 
       <Card>
         <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
           <label className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm focus:border-primary-500 focus:outline-none" placeholder="Tìm theo tên cuộc họp..." />
+            <input
+              className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm focus:border-primary-500 focus:outline-none"
+              placeholder="Tìm theo tên cuộc họp..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </label>
-          <button type="button" className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-            <CalendarDays className="h-4 w-4" />
-            Ngày
-          </button>
-          <button type="button" className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+          <div className="relative inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-1 bg-white text-slate-700 hover:bg-slate-50 focus-within:ring-1 focus-within:ring-primary-500">
+            <CalendarDays className="h-4 w-4 text-slate-400" />
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="text-sm bg-transparent border-none outline-none focus:ring-0 text-slate-700 py-1"
+            />
+          </div>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
             <Filter className="h-4 w-4" />
             Trạng thái
           </button>
@@ -53,24 +119,55 @@ export default function MinutesListPage() {
       </Card>
 
       <Card title="Danh sách biên bản" subtitle="Ghi chú cuộc họp mới nhất trong workspace">
-        <div className="hidden md:block">
-          <DataTable columns={columns} data={minutesData} />
-        </div>
-        <div className="space-y-3 md:hidden">
-          {minutesData.map((item) => (
-            <article key={item.id} className="rounded-xl border border-slate-200 p-4">
-              <div className="flex items-center justify-between">
-                <p className="font-semibold text-slate-900">{item.title}</p>
-                <span className="text-xs text-slate-500">{item.date}</span>
-              </div>
-              <p className="mt-2 text-sm text-slate-600">{item.summary}</p>
-              <Link to={`/minutes/${item.id}`} className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary-600">
-                <FileText className="h-4 w-4" />
-                Mở chi tiết
-              </Link>
-            </article>
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <svg className="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          </div>
+        ) : minutes.length === 0 ? (
+          <div className="text-center py-12 text-slate-500">
+            Không tìm thấy biên bản họp nào.
+          </div>
+        ) : (
+          <>
+            <div className="hidden md:block">
+              <DataTable columns={columns} data={minutes} />
+            </div>
+            <div className="space-y-3 md:hidden">
+              {minutes.map((item) => (
+                <article key={item.roomCode} className="rounded-xl border border-slate-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-900">{item.name}</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-xs text-slate-500">
+                          {item.expiresAt ? new Date(item.expiresAt).toLocaleDateString('vi-VN') : 'N/A'}
+                        </span>
+                        {getStatusBadge(item.status)}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-600">{item.description}</p>
+                  {item.status === 'ENDED' && (
+                    <Link
+                      to={`/minutes/${item.roomCode}`}
+                      className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Mở chi tiết
+                    </Link>
+                  )}
+                </article>
+              ))}
+            </div>
+          </>
+        )}
       </Card>
     </div>
   );

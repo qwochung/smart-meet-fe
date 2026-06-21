@@ -17,5 +17,9 @@ export const roomApi = {
         'Content-Type': 'application/json',
       },
     });
+  },
+
+  getRoomMinutes: async (params) => {
+    return await axiosClient.get('/rooms/minutes', { params });
   }
 };
