@@ -50,6 +50,11 @@ export const roomService = {
     const response = await axiosClient.post(`/rooms/${roomCode}/join/reject`, payload);
     return unwrapResponse(response);
   },
+
+  async getRoomMinutes(params) {
+    const response = await axiosClient.get('/rooms/minutes', { params });
+    return unwrapResponse(response);
+  },
 };
 
 export const roomSessionStorage = {

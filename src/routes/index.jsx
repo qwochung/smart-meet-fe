@@ -100,7 +100,7 @@ const AppRoutes = () => {
             )}
           />
           <Route path="/room/:roomCode" element={<MeetingRoomPage />} />
-          <Route path="/room/:roomCode/summary" element={<MeetingEndedPage />} />
+          <Route path="/minutes/:roomCode/summary" element={<MeetingEndedPage />} />
         </Route>
 
         {/* App modules */}
@@ -113,7 +113,7 @@ const AppRoutes = () => {
         >
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/minutes" element={<MinutesListPage />} />
-          <Route path="/minutes/:id" element={<MinutesDetailPage />} />
+          {/*<Route path="/minutes/:id" element={<MinutesDetailPage />} />*/}
           <Route path="/meetings" element={<MeetingsDashboardPage />} />
           <Route path="/meetings/new" element={<CreateRoomPage />} />
           <Route path="/meetings/:id" element={<MeetingDetailPage />} />

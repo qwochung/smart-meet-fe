@@ -976,7 +976,7 @@ export default function MeetingRoomPage() {
           onToggleScreenShare={handleToggleScreenShare}
           onToggleAsr={() => setAsrEnabled((prev) => !prev)}
           onToggleParticipants={toggleParticipantsPanel}
-          onLeave={() => navigate(`/room/${roomCode}/summary`)}
+          onLeave={() => navigate(`/minutes/${roomCode}/summary`)}
           whiteboardActive={whiteboardActive}
           onToggleWhiteboard={() => setWhiteboardActive((prev) => !prev)}
           isWhiteboardAllowed={Boolean(screenShareParticipant)}
