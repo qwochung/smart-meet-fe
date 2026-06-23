@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Clock3, Settings2, Sparkles, X } from "lucide-react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Repeat,
+  Settings2,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { Button, Card } from "../../components/common";
 import { getStoredUser } from "../../utils/auth.js";
 import { roomService, roomSessionStorage } from "../../services/roomService";
@@ -35,10 +43,17 @@ export default function CreateRoomPage() {
   const [autoRecord, setAutoRecord] = useState(false);
   const [generateAiMinutes, setGenerateAiMinutes] = useState(true);
   const [privacySetting, setPrivacySetting] = useState("chi-khach-moi");
+  const [recurrenceType, setRecurrenceType] = useState("NONE");
+  const [occurrences, setOccurrences] = useState(4);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [createdSession, setCreatedSession] = useState(null);
+  const [scheduledRooms, setScheduledRooms] = useState(null);
 
+  const isRecurring = recurrenceType !== "NONE";
+  const scheduledPreview = date && time ? new Date(`${date}T${time}:00`) : null;
+  const isScheduledFuture =
+    scheduledPreview && scheduledPreview.getTime() > Date.now();
   const currentUser = getStoredUser();
 
   const handleSubmit = async (e) => {
@@ -49,11 +64,50 @@ export default function CreateRoomPage() {
       return;
     }
 
-    setLoading(true);
-    setError("");
+    if (!meetingName.trim()) {
+      setError("Vui lòng nhập tên cuộc họp.");
+      return;
+    }
 
     const scheduledAt =
       date && time ? new Date(`${date}T${time}:00`).toISOString() : null;
+
+    // Cuộc họp đặt cho thời điểm trong tương lai -> chỉ lên lịch (phòng WAITING), không vào ngay
+    const isScheduledFuture =
+      scheduledAt && new Date(scheduledAt).getTime() > Date.now();
+
+    if (isRecurring) {
+      if (!scheduledAt) {
+        setError("Cuộc họp lặp lại cần có cả ngày và giờ bắt đầu.");
+        return;
+      }
+    }
+
+    // Lặp lịch hoặc đặt lịch tương lai: tạo phòng đã lên lịch, không vào phòng ngay
+    if (isRecurring || isScheduledFuture) {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await roomService.scheduleMeetings({
+          name: meetingName.trim(),
+          description: description.trim(),
+          scheduledAt,
+          recurrenceType: isRecurring ? recurrenceType : "NONE",
+          occurrences: isRecurring ? Number(occurrences) || 1 : 1,
+        });
+        const rooms = response?.data || response || [];
+        setScheduledRooms(Array.isArray(rooms) ? rooms : []);
+      } catch (scheduleError) {
+        setError(scheduleError?.message || "Không thể lên lịch cuộc họp.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
     const payload = {
       name: meetingName.trim(),
       description: description.trim(),
@@ -110,6 +164,75 @@ export default function CreateRoomPage() {
       addParticipant();
     }
   };
+
+  if (scheduledRooms) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="flex items-center gap-3">
+          <span className="rounded-full bg-emerald-50 p-2 text-emerald-600">
+            <CheckCircle2 className="h-6 w-6" />
+          </span>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+              {scheduledRooms.length > 1
+                ? `Đã lên lịch ${scheduledRooms.length} buổi họp`
+                : "Đã lên lịch cuộc họp"}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {scheduledRooms.length > 1
+                ? "Các buổi họp định kỳ đã được tạo và sẽ xuất hiện trong lịch của bạn."
+                : "Cuộc họp đã được lên lịch và sẽ xuất hiện trong lịch của bạn."}
+            </p>
+          </div>
+        </div>
+
+        <Card>
+          <div className="space-y-3">
+            {scheduledRooms.map((room, index) => (
+              <article
+                key={room.roomCode || index}
+                className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-4"
+              >
+                <div>
+                  <p className="font-medium text-slate-900">
+                    Buổi {index + 1}: {room.name}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {room.scheduledAt
+                      ? new Date(room.scheduledAt).toLocaleString("vi-VN", {
+                          weekday: "long",
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Chưa xác định"}
+                  </p>
+                </div>
+                <span className="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600">
+                  {room.roomCode}
+                </span>
+              </article>
+            ))}
+          </div>
+        </Card>
+
+        <div className="flex justify-end gap-3">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setScheduledRooms(null);
+              setRecurrenceType("NONE");
+            }}
+          >
+            Tạo lịch khác
+          </Button>
+          <Button onClick={() => navigate("/dashboard")}>Về trang tổng quan</Button>
+        </div>
+      </div>
+    );
+  }
 
   if (createdSession) {
     const uploadStorageKey = `smart-meet-pre-meeting-upload:${createdSession.roomCode}:${currentUser?.id}:HOST`;
@@ -278,6 +401,61 @@ export default function CreateRoomPage() {
                 </div>
               </div>
 
+              <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <Repeat className="h-4 w-4 text-primary-500" />
+                  Lặp lịch định kỳ
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-slate-500">
+                      Tần suất lặp
+                    </label>
+                    <select
+                      value={recurrenceType}
+                      onChange={(event) => setRecurrenceType(event.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                    >
+                      <option value="NONE">Không lặp</option>
+                      <option value="DAILY">Hằng ngày</option>
+                      <option value="WEEKLY">Hằng tuần</option>
+                      <option value="MONTHLY">Hằng tháng</option>
+                    </select>
+                  </div>
+                  {isRecurring && (
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-slate-500">
+                        Số buổi (2 - 12)
+                      </label>
+                      <input
+                        type="number"
+                        min={2}
+                        max={12}
+                        value={occurrences}
+                        onChange={(event) =>
+                          setOccurrences(
+                            Math.max(2, Math.min(12, Number(event.target.value) || 2)),
+                          )
+                        }
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                      />
+                    </div>
+                  )}
+                </div>
+                {isRecurring && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Sẽ tạo {occurrences} buổi họp, bắt đầu từ ngày &amp; giờ đã chọn ở trên,
+                    cách nhau{" "}
+                    {recurrenceType === "DAILY"
+                      ? "mỗi ngày"
+                      : recurrenceType === "WEEKLY"
+                        ? "mỗi tuần"
+                        : "mỗi tháng"}
+                    .
+                  </p>
+                )}
+              </div>
+
               <div className="mt-5">
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Quyền riêng tư cuộc họp
@@ -315,7 +493,11 @@ export default function CreateRoomPage() {
               loading={loading}
               className="bg-sky-500 px-6 hover:bg-sky-600 focus:ring-sky-500"
             >
-              Tạo cuộc họp
+              {isRecurring
+                ? `Lên lịch ${occurrences} buổi`
+                : isScheduledFuture
+                  ? "Lên lịch cuộc họp"
+                  : "Tạo cuộc họp"}
             </Button>
           </div>
         </form>

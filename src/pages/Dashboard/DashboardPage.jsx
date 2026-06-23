@@ -1,137 +1,198 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Clock3,
   FilePlus2,
   FileText,
-  Mic,
   Plus,
+  Repeat,
   Search,
   Video,
+  Radio,
 } from "lucide-react";
 import { Button, Card, Input, MeetingCalendar } from "../../components/common";
 import { useAuth } from "../../contexts/AuthContext";
+import { roomService } from "../../services/roomService";
 
-const upcomingMeetings = [
-  {
-    id: "u1",
-    title: "Đồng bộ sản phẩm hằng tuần",
-    time: "Hôm nay, 10:00",
-    attendees: 8,
-  },
-  {
-    id: "u2",
-    title: "Đánh giá thiết kế",
-    time: "Hôm nay, 15:00",
-    attendees: 5,
-  },
-];
+const STATUS_BADGE = {
+  ACTIVE: { label: "Đang diễn ra", className: "bg-emerald-50 text-emerald-700" },
+  WAITING: { label: "Đang chờ", className: "bg-amber-50 text-amber-700" },
+  ENDED: { label: "Đã kết thúc", className: "bg-slate-100 text-slate-600" },
+};
 
-const recentMinutes = [
-  { id: "m1", title: "Ghi chú lập kế hoạch Sprint", updated: "2 giờ trước" },
-  { id: "m2", title: "Tổng hợp phản hồi khách hàng", updated: "Hôm qua" },
-];
+function formatDateTime(value) {
+  if (!value) return "Chưa lên lịch";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Chưa lên lịch";
+  return date.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
-const roomStatus = [
-  {
-    id: "r1",
-    room: "Phòng sản phẩm A1",
-    live: true,
-    participants: 7,
-    quality: "Xuất sắc",
-    latency: "42ms",
-  },
-  {
-    id: "r2",
-    room: "Phòng kỹ thuật",
-    live: true,
-    participants: 12,
-    quality: "Tốt",
-    latency: "68ms",
-  },
-  {
-    id: "r3",
-    room: "Họp nhanh kinh doanh",
-    live: false,
-    participants: 0,
-    quality: "Nhàn rỗi",
-    latency: "-",
-  },
-];
+function formatDate(value) {
+  if (!value) return "N/A";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "N/A";
+  return date.toLocaleDateString("vi-VN");
+}
 
-const recentTranscripts = [
-  {
-    id: "t1",
-    meeting: "Đánh giá thiết kế",
-    time: "35 phút trước",
-    snippet:
-      "Quyết định: giữ điều hướng tối giản và đưa bộ lọc nâng cao vào khu vực mở rộng.",
+const EMPTY_DASHBOARD = {
+  stats: {
+    totalMeetings: 0,
+    meetingsThisWeek: 0,
+    minutesCreated: 0,
+    activeRooms: 0,
+    waitingRooms: 0,
   },
-  {
-    id: "t2",
-    meeting: "Cập nhật với khách hàng",
-    time: "Hôm nay, 09:10",
-    snippet:
-      "Công việc cần làm: chuẩn bị lại timeline triển khai và chia sẻ trước trưa thứ Sáu.",
-  },
-  {
-    id: "t3",
-    meeting: "Họp nhanh kỹ thuật",
-    time: "Hôm qua",
-    snippet:
-      "Đã phát hiện rủi ro độ trễ API khi tải cao, nhiệm vụ theo dõi đã giao cho đội backend.",
-  },
-];
-
-const weeklyMeetingTrend = [
-  { day: "T2", meetings: 3, duration: 110 },
-  { day: "T3", meetings: 4, duration: 148 },
-  { day: "T4", meetings: 2, duration: 84 },
-  { day: "T5", meetings: 5, duration: 190 },
-  { day: "T6", meetings: 4, duration: 162 },
-  { day: "T7", meetings: 1, duration: 36 },
-  { day: "CN", meetings: 2, duration: 72 },
-];
-
-const connectionQualityByHour = [
-  { slot: "08:00-10:00", excellent: 64, good: 27, unstable: 9 },
-  { slot: "10:00-12:00", excellent: 58, good: 31, unstable: 11 },
-  { slot: "13:00-15:00", excellent: 71, good: 22, unstable: 7 },
-  { slot: "15:00-17:00", excellent: 66, good: 26, unstable: 8 },
-];
-
-const minutesPipeline = [
-  { stage: "Cuộc họp đã kết thúc", completed: 42, total: 42 },
-  { stage: "AI phiên âm hoàn tất", completed: 40, total: 42 },
-  { stage: "Rút trích quyết định", completed: 36, total: 42 },
-  { stage: "Sinh biên bản bản nháp", completed: 33, total: 42 },
-  { stage: "Duyệt và phát hành", completed: 29, total: 42 },
-];
-
-const calendarEvents = [
-  { id: "m101", title: "Đồng bộ sản phẩm hằng tuần", startAt: "2026-04-20T10:00:00", attendees: 8, status: "Sắp diễn ra" },
-  { id: "m102", title: "Đánh giá thiết kế", startAt: "2026-04-20T15:00:00", attendees: 5, status: "Sắp diễn ra" },
-  { id: "m103", title: "Cập nhật với khách hàng", startAt: "2026-04-21T14:00:00", attendees: 6, status: "Sắp diễn ra" },
-  { id: "m104", title: "Sprint planning", startAt: "2026-04-23T09:30:00", attendees: 10, status: "Sắp diễn ra" },
-  { id: "m105", title: "Demo cuối tuần", startAt: "2026-04-24T15:00:00", attendees: 11, status: "Sắp diễn ra" },
-];
+  weeklyTrend: [],
+  hourlyDistribution: [],
+  upcomingMeetings: [],
+  recentMinutes: [],
+  roomStatus: [],
+};
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const maxMeetingCount = Math.max(
-    ...weeklyMeetingTrend.map((item) => item.meetings),
+  const [dashboard, setDashboard] = useState(EMPTY_DASHBOARD);
+  const [allMeetings, setAllMeetings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchDashboard = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [dashboardRes, meetingsRes] = await Promise.all([
+          roomService.getDashboard(),
+          roomService.getRoomMinutes({}),
+        ]);
+        const data = dashboardRes?.data ?? dashboardRes ?? {};
+        const meetings = Array.isArray(meetingsRes)
+          ? meetingsRes
+          : meetingsRes?.data ?? [];
+        if (!cancelled) {
+          setDashboard({ ...EMPTY_DASHBOARD, ...data });
+          setAllMeetings(Array.isArray(meetings) ? meetings : []);
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard:", err);
+        if (!cancelled) {
+          setError("Không tải được dữ liệu tổng quan. Vui lòng thử lại.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchDashboard();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const {
+    stats,
+    weeklyTrend,
+    hourlyDistribution,
+    upcomingMeetings,
+    recentMinutes,
+    roomStatus,
+  } = dashboard;
+
+  const maxMeetingCount = useMemo(
+    () => Math.max(1, ...weeklyTrend.map((item) => item.meetings)),
+    [weeklyTrend],
   );
-  const trendPoints = weeklyMeetingTrend
-    .map((item, index) => {
-      const x = (index / (weeklyMeetingTrend.length - 1)) * 100;
-      const y = 90 - (item.meetings / maxMeetingCount) * 70;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  const minutesDone = minutesPipeline[minutesPipeline.length - 1].completed;
-  const minutesTotal = minutesPipeline[0].total;
-  const minutesCompletionRate = Math.round((minutesDone / minutesTotal) * 100);
-  const gaugeDegree = Math.round((minutesCompletionRate / 100) * 360);
-  const minutesGauge = `conic-gradient(rgb(37 99 235) 0deg ${gaugeDegree}deg, rgb(226 232 240) ${gaugeDegree}deg 360deg)`;
+
+  // Đường gấp khúc + vùng tô cho biểu đồ xu hướng (toạ độ pixel trong khung 620x220)
+  const trend = useMemo(() => {
+    const W = 620;
+    const H = 220;
+    const padX = 24;
+    const padTop = 24;
+    const padBottom = 36;
+    if (weeklyTrend.length < 2) {
+      return { line: "", area: "", dots: [], W, H, gridY: [] };
+    }
+    const innerW = W - padX * 2;
+    const innerH = H - padTop - padBottom;
+    const coords = weeklyTrend.map((item, index) => {
+      const x = padX + (index / (weeklyTrend.length - 1)) * innerW;
+      const y = padTop + (1 - item.meetings / maxMeetingCount) * innerH;
+      return { x, y, value: item.meetings, day: item.day };
+    });
+    const line = coords.map((c) => `${c.x},${c.y}`).join(" ");
+    const baseY = padTop + innerH;
+    const area = `${padX},${baseY} ${line} ${W - padX},${baseY}`;
+    const gridY = [0, 0.5, 1].map((t) => padTop + t * innerH);
+    return { line, area, dots: coords, W, H, gridY };
+  }, [weeklyTrend, maxMeetingCount]);
+
+  // Phân bố trạng thái phòng cho biểu đồ tròn (donut)
+  const statusSegments = useMemo(() => {
+    const segments = [
+      { key: "active", label: "Đang hoạt động", value: stats.activeRooms, color: "#10b981" },
+      { key: "waiting", label: "Đã lên lịch", value: stats.waitingRooms, color: "#f59e0b" },
+      { key: "ended", label: "Đã kết thúc", value: stats.minutesCreated, color: "#3b82f6" },
+    ];
+    const total = segments.reduce((sum, s) => sum + s.value, 0);
+    let offset = 0;
+    const withArc = segments.map((s) => {
+      const fraction = total > 0 ? s.value / total : 0;
+      const arc = { ...s, fraction, dash: fraction * 100, offset };
+      offset += fraction * 100;
+      return arc;
+    });
+    return { segments: withArc, total };
+  }, [stats]);
+
+  const maxHourCount = useMemo(
+    () => Math.max(1, ...hourlyDistribution.map((item) => item.meetings)),
+    [hourlyDistribution],
+  );
+
+  // Lịch lấy toàn bộ cuộc họp (cả đã diễn ra lẫn sắp tới) để hiển thị đầy đủ
+  const calendarEvents = useMemo(() => {
+    const source = allMeetings.length > 0 ? allMeetings : upcomingMeetings;
+    return source.map((meeting) => ({
+      id: meeting.roomCode,
+      title: meeting.name,
+      startAt: meeting.scheduledAt || meeting.expiresAt,
+      attendees: meeting.participants ?? 0,
+      status: STATUS_BADGE[meeting.status]?.label ?? meeting.status,
+    }));
+  }, [allMeetings, upcomingMeetings]);
+
+  const statCards = [
+    {
+      label: "Cuộc họp tuần này",
+      value: stats.meetingsThisWeek,
+      icon: Video,
+    },
+    {
+      label: "Tổng số cuộc họp",
+      value: stats.totalMeetings,
+      icon: Clock3,
+    },
+    {
+      label: "Biên bản đã tạo",
+      value: stats.minutesCreated,
+      icon: FileText,
+    },
+    {
+      label: "Phòng đang hoạt động",
+      value: stats.activeRooms,
+      icon: Radio,
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -176,224 +237,191 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {error && (
         <Card>
-          <div className="flex items-center gap-3">
-            <span className="rounded-lg bg-primary-50 p-2 text-primary-600">
-              <Video className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm text-slate-500">Cuộc họp tuần này</p>
-              <p className="text-2xl font-bold">12</p>
-            </div>
-          </div>
+          <p className="text-sm text-rose-600">{error}</p>
         </Card>
-        <Card>
-          <div className="flex items-center gap-3">
-            <span className="rounded-lg bg-primary-50 p-2 text-primary-600">
-              <FileText className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm text-slate-500">Biên bản đã tạo</p>
-              <p className="text-2xl font-bold">28</p>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((card) => (
+          <Card key={card.label}>
+            <div className="flex items-center gap-3">
+              <span className="rounded-lg bg-primary-50 p-2 text-primary-600">
+                <card.icon className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm text-slate-500">{card.label}</p>
+                <p className="text-2xl font-bold">
+                  {loading ? "—" : card.value}
+                </p>
+              </div>
             </div>
-          </div>
-        </Card>
-        <Card>
-          <div className="flex items-center gap-3">
-            <span className="rounded-lg bg-primary-50 p-2 text-primary-600">
-              <Clock3 className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm text-slate-500">
-                Thời lượng họp trung bình
-              </p>
-              <p className="text-2xl font-bold">43m</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card
           title="Xu hướng cuộc họp trong tuần"
-          subtitle="Số phiên họp đã diễn ra theo từng ngày"
+          subtitle="Số phiên họp được tạo theo từng ngày trong tuần này"
           className="lg:col-span-2"
         >
-          <div className="space-y-3">
-            <div className="relative h-40 w-full rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <svg
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                className="h-full w-full overflow-visible"
-              >
-                <polyline
-                  points={trendPoints}
-                  fill="none"
-                  stroke="rgb(37 99 235)"
-                  strokeWidth="2.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+          {weeklyTrend.length < 2 ? (
+            <p className="py-10 text-center text-sm text-slate-400">
+              {loading ? "Đang tải..." : "Chưa có đủ dữ liệu để vẽ biểu đồ."}
+            </p>
+          ) : (
+            <svg
+              viewBox={`0 0 ${trend.W} ${trend.H}`}
+              className="h-56 w-full"
+              role="img"
+              aria-label="Biểu đồ xu hướng cuộc họp trong tuần"
+            >
+              <defs>
+                <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="rgb(37 99 235)" stopOpacity="0.28" />
+                  <stop offset="100%" stopColor="rgb(37 99 235)" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {trend.gridY.map((y, i) => (
+                <line
+                  key={i}
+                  x1="24"
+                  x2={trend.W - 24}
+                  y1={y}
+                  y2={y}
+                  stroke="rgb(226 232 240)"
+                  strokeWidth="1"
+                  strokeDasharray="4 4"
                 />
-              </svg>
-            </div>
-            <div className="grid grid-cols-7 gap-2 text-xs text-slate-600">
-              {weeklyMeetingTrend.map((item) => (
-                <div
-                  key={item.day}
-                  className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-center"
-                >
-                  <p className="font-semibold text-slate-700">{item.day}</p>
-                  <p className="mt-1 text-slate-500">
-                    {item.meetings} cuộc họp
-                  </p>
-                </div>
               ))}
-            </div>
-          </div>
+              <polygon points={trend.area} fill="url(#trendFill)" />
+              <polyline
+                points={trend.line}
+                fill="none"
+                stroke="rgb(37 99 235)"
+                strokeWidth="2.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {trend.dots.map((dot) => (
+                <g key={dot.day}>
+                  <circle cx={dot.x} cy={dot.y} r="4.5" fill="white" stroke="rgb(37 99 235)" strokeWidth="2.4" />
+                  {dot.value > 0 && (
+                    <text x={dot.x} y={dot.y - 10} textAnchor="middle" className="fill-slate-600" fontSize="12" fontWeight="600">
+                      {dot.value}
+                    </text>
+                  )}
+                  <text x={dot.x} y={trend.H - 12} textAnchor="middle" className="fill-slate-400" fontSize="12">
+                    {dot.day}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          )}
         </Card>
 
         <Card
-          title="Chất lượng kết nối theo khung giờ"
-          subtitle="Phân bố ổn định đường truyền trong ngày"
+          title="Phân bố trạng thái phòng"
+          subtitle="Tỷ lệ phòng theo trạng thái"
         >
-          <div className="space-y-4">
-            <div className="space-y-3">
-              {connectionQualityByHour.map((item) => (
-                <div key={item.slot} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs text-slate-600">
-                    <span className="font-medium text-slate-700">
-                      {item.slot}
-                    </span>
-                    <span>Không ổn định: {item.unstable}%</span>
-                  </div>
-                  <div className="flex h-2.5 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="bg-emerald-500"
-                      style={{ width: `${item.excellent}%` }}
-                      aria-hidden="true"
-                    />
-                    <div
-                      className="bg-amber-400"
-                      style={{ width: `${item.good}%` }}
-                      aria-hidden="true"
-                    />
-                    <div
-                      className="bg-rose-500"
-                      style={{ width: `${item.unstable}%` }}
-                      aria-hidden="true"
-                    />
-                  </div>
+          {statusSegments.total === 0 ? (
+            <p className="py-10 text-center text-sm text-slate-400">
+              {loading ? "Đang tải..." : "Chưa có dữ liệu."}
+            </p>
+          ) : (
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative h-44 w-44">
+                <svg viewBox="0 0 42 42" className="h-full w-full -rotate-90">
+                  <circle cx="21" cy="21" r="15.915" fill="none" stroke="rgb(241 245 249)" strokeWidth="6" />
+                  {statusSegments.segments.map((s) =>
+                    s.dash > 0 ? (
+                      <circle
+                        key={s.key}
+                        cx="21"
+                        cy="21"
+                        r="15.915"
+                        fill="none"
+                        stroke={s.color}
+                        strokeWidth="6"
+                        strokeDasharray={`${s.dash} ${100 - s.dash}`}
+                        strokeDashoffset={-s.offset}
+                        strokeLinecap="butt"
+                      />
+                    ) : null,
+                  )}
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl font-bold text-slate-900">
+                    {statusSegments.total}
+                  </span>
+                  <span className="text-xs text-slate-500">phòng</span>
                 </div>
-              ))}
+              </div>
+              <div className="w-full space-y-1.5">
+                {statusSegments.segments.map((s) => (
+                  <div
+                    key={s.key}
+                    className="flex items-center justify-between text-xs text-slate-600"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: s.color }}
+                      />
+                      {s.label}
+                    </span>
+                    <span className="font-semibold text-slate-700">
+                      {s.value} ({Math.round(s.fraction * 100)}%)
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-4 pt-1 text-xs text-slate-600">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                Ổn định cao
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                Trung bình
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
-                Không ổn định
-              </span>
-            </div>
-          </div>
+          )}
         </Card>
       </div>
 
       <Card
-        title="Hiệu suất sinh biên bản tự động"
-        subtitle="Từ lúc kết thúc họp đến lúc phát hành biên bản"
+        title="Cuộc họp theo khung giờ"
+        subtitle="Phân bố thời điểm các cuộc họp được tạo trong ngày"
       >
-        <div className="grid gap-6 md:grid-cols-[220px_1fr] md:items-center">
-          <div
-            className="mx-auto h-40 w-40 rounded-full p-3"
-            style={{ background: minutesGauge }}
-          >
-            <div className="flex h-full items-center justify-center rounded-full bg-white text-center">
-              <div>
-                <p className="text-3xl font-bold text-slate-900">
-                  {minutesCompletionRate}%
-                </p>
-                <p className="text-xs text-slate-500">Biên bản đã phát hành</p>
-                <p className="mt-1 text-xs font-medium text-slate-700">
-                  {minutesDone}/{minutesTotal} cuộc họp
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {minutesPipeline.map((item) => {
-              const percentage = Math.round(
-                (item.completed / item.total) * 100,
-              );
+        {hourlyDistribution.length === 0 ? (
+          <p className="py-10 text-center text-sm text-slate-400">
+            {loading ? "Đang tải..." : "Chưa có dữ liệu."}
+          </p>
+        ) : (
+          <div className="flex items-end justify-between gap-3 pt-2">
+            {hourlyDistribution.map((bucket) => {
+              const heightPct = Math.round((bucket.meetings / maxHourCount) * 100);
               return (
-                <article
-                  key={item.stage}
-                  className="rounded-lg border border-slate-200 p-3"
+                <div
+                  key={bucket.label}
+                  className="flex flex-1 flex-col items-center gap-2"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-slate-800">
-                      {item.stage}
-                    </p>
-                    <span className="text-xs font-semibold text-slate-700">
-                      {item.completed}/{item.total}
-                    </span>
-                  </div>
-                  <div className="mt-2 h-2 rounded-full bg-slate-100">
+                  <span className="text-xs font-semibold text-slate-600">
+                    {bucket.meetings}
+                  </span>
+                  <div className="flex h-36 w-full items-end">
                     <div
-                      className="h-full rounded-full bg-primary-500"
-                      style={{ width: `${percentage}%` }}
-                      aria-hidden="true"
+                      className="w-full rounded-t-lg bg-gradient-to-t from-primary-500 to-primary-300 transition-all"
+                      style={{ height: `${Math.max(heightPct, 3)}%` }}
+                      title={`${bucket.label}: ${bucket.meetings} cuộc họp`}
                     />
                   </div>
-                </article>
+                  <span className="text-xs text-slate-500">{bucket.label}</span>
+                </div>
               );
             })}
           </div>
-        </div>
-      </Card>
-
-      <Card title="Trọng tâm hôm nay">
-        <div className="grid gap-3 md:grid-cols-3">
-          <article className="rounded-lg border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Cuộc họp tiếp theo
-            </p>
-            <p className="mt-2 font-semibold text-slate-900">
-              Đồng bộ sản phẩm hằng tuần
-            </p>
-            <p className="mt-1 text-sm text-slate-500">10:00 · Phòng A1</p>
-          </article>
-          <article className="rounded-lg border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Biên bản chờ xử lý
-            </p>
-            <p className="mt-2 font-semibold text-slate-900">2 bản nháp</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Cần duyệt trước cuối ngày
-            </p>
-          </article>
-          <article className="rounded-lg border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Mức sẵn sàng của đội
-            </p>
-            <p className="mt-2 font-semibold text-slate-900">87% đang online</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Khung giờ tốt nhất: 15:00
-            </p>
-          </article>
-        </div>
+        )}
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card
           title="Trạng thái phòng theo thời gian thực"
-          subtitle="Sức khỏe phòng họp và tải người tham gia"
+          subtitle="Các phòng đang trực tiếp và số người tham gia"
           action={
             <Link
               to="/meetings"
@@ -403,123 +431,125 @@ export default function DashboardPage() {
             </Link>
           }
         >
-          <div className="space-y-3">
-            {roomStatus.map((room) => (
-              <article
-                key={room.id}
-                className="rounded-lg border border-slate-200 p-4"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-block h-2.5 w-2.5 rounded-full ${
-                        room.live ? "bg-emerald-500" : "bg-slate-300"
-                      }`}
-                    />
-                    <p className="font-medium text-slate-900">{room.room}</p>
+          {roomStatus.length === 0 ? (
+            <p className="py-6 text-center text-sm text-slate-400">
+              {loading ? "Đang tải..." : "Không có phòng nào đang hoạt động."}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {roomStatus.map((room) => (
+                <article
+                  key={room.roomCode}
+                  className="rounded-lg border border-slate-200 p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                      <p className="font-medium text-slate-900">{room.name}</p>
+                    </div>
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                      Đang trực tiếp
+                    </span>
                   </div>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                      room.live
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {room.live ? "Đang trực tiếp" : "Ngoại tuyến"}
-                  </span>
-                </div>
-                <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
-                  <p>Người tham gia: {room.participants}</p>
-                  <p>Chất lượng: {room.quality}</p>
-                  <p>Độ trễ: {room.latency}</p>
-                </div>
-              </article>
-            ))}
-          </div>
+                  <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+                    <p>Mã phòng: {room.roomCode}</p>
+                    <p>Người tham gia: {room.participants}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </Card>
 
         <Card
-          title="Bản ghi gần đây"
-          subtitle="Trích đoạn hội thoại mới nhất do AI tạo"
+          title="Biên bản gần đây"
+          subtitle="Các cuộc họp đã kết thúc gần đây"
           action={
             <Link
               to="/minutes"
               className="text-sm text-primary-600 hover:text-primary-700"
             >
-              Xem bản ghi
+              Xem biên bản
             </Link>
           }
         >
-          <div className="space-y-3">
-            {recentTranscripts.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-lg border border-slate-200 p-4"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-slate-900">{item.meeting}</p>
-                  <span className="text-xs text-slate-500">{item.time}</span>
-                </div>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  {item.snippet}
-                </p>
-                <button
-                  type="button"
-                  className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700"
+          {recentMinutes.length === 0 ? (
+            <p className="py-6 text-center text-sm text-slate-400">
+              {loading ? "Đang tải..." : "Chưa có biên bản nào."}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {recentMinutes.map((item) => (
+                <Link
+                  key={item.roomCode}
+                  to={`/minutes/${item.roomCode}/summary`}
+                  className="block rounded-lg border border-slate-200 p-4 transition hover:border-primary-300 hover:bg-primary-50/30"
                 >
-                  <Mic className="h-3.5 w-3.5" />
-                  Mở bản ghi đầy đủ
-                </button>
-              </article>
-            ))}
-          </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-slate-900">{item.name}</p>
+                    <span className="text-xs text-slate-500">
+                      {formatDate(item.expiresAt)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Mã phòng: {item.roomCode}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card
-          title="Cuộc họp sắp tới"
-          action={
-            <Link to="/meetings" className="text-sm text-primary-600">
-              Xem tất cả
-            </Link>
-          }
-        >
-          <div className="space-y-3">
-            {upcomingMeetings.map((meeting) => (
-              <article
-                key={meeting.id}
-                className="rounded-lg border border-slate-200 p-3"
-              >
-                <p className="font-medium text-slate-900">{meeting.title}</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  {meeting.time} · {meeting.attendees} người tham gia
-                </p>
-              </article>
-            ))}
+      <Card
+        title="Cuộc họp sắp tới"
+        subtitle="Các phòng đang chờ hoặc đang diễn ra"
+        action={
+          <Link to="/meetings" className="text-sm text-primary-600">
+            Xem tất cả
+          </Link>
+        }
+      >
+        {upcomingMeetings.length === 0 ? (
+          <p className="py-6 text-center text-sm text-slate-400">
+            {loading ? "Đang tải..." : "Không có cuộc họp sắp tới."}
+          </p>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {upcomingMeetings.map((meeting) => {
+              const badge = STATUS_BADGE[meeting.status] ?? {
+                label: meeting.status,
+                className: "bg-slate-100 text-slate-600",
+              };
+              return (
+                <article
+                  key={meeting.roomCode}
+                  className="rounded-lg border border-slate-200 p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-slate-900">{meeting.name}</p>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
+                    >
+                      {badge.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {formatDateTime(meeting.scheduledAt || meeting.expiresAt)} ·{" "}
+                    {meeting.participants ?? 0} người tham gia
+                  </p>
+                  {meeting.recurrenceRule && (
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">
+                      <Repeat className="h-3 w-3" />
+                      {meeting.recurrenceRule}
+                    </span>
+                  )}
+                </article>
+              );
+            })}
           </div>
-        </Card>
-        <Card
-          title="Biên bản gần đây"
-          action={
-            <Link to="/minutes" className="text-sm text-primary-600">
-              Mở biên bản
-            </Link>
-          }
-        >
-          <div className="space-y-3">
-            {recentMinutes.map((minute) => (
-              <article
-                key={minute.id}
-                className="rounded-lg border border-slate-200 p-3"
-              >
-                <p className="font-medium text-slate-900">{minute.title}</p>
-                <p className="mt-1 text-sm text-slate-500">{minute.updated}</p>
-              </article>
-            ))}
-          </div>
-        </Card>
-      </div>
+        )}
+      </Card>
 
       <Card title="Lịch">
         <MeetingCalendar events={calendarEvents} compact />
