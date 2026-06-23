@@ -21,5 +21,13 @@ export const roomApi = {
 
   getRoomMinutes: async (params) => {
     return await axiosClient.get('/rooms/minutes', { params });
+  },
+
+  getDashboard: async () => {
+    return await axiosClient.get('/rooms/dashboard');
+  },
+
+  scheduleMeetings: async (payload) => {
+    return await axiosClient.post('/rooms/schedule', payload);
   }
 };

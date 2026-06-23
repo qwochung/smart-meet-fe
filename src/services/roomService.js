@@ -55,6 +55,16 @@ export const roomService = {
     const response = await axiosClient.get('/rooms/minutes', { params });
     return unwrapResponse(response);
   },
+
+  async getDashboard() {
+    const response = await axiosClient.get('/rooms/dashboard');
+    return unwrapResponse(response);
+  },
+
+  async scheduleMeetings(payload) {
+    const response = await axiosClient.post('/rooms/schedule', payload);
+    return unwrapResponse(response);
+  },
 };
 
 export const roomSessionStorage = {
