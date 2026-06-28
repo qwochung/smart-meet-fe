@@ -32,6 +32,7 @@ function Toggle({ enabled, onToggle }) {
 export default function CreateRoomPage() {
   const [meetingName, setMeetingName] = useState("");
   const [description, setDescription] = useState("");
+  const [meetingType, setMeetingType] = useState("GENERAL");
   const navigate = useNavigate();
   const [date, setDate] = useState(() => {
     const d = new Date();
@@ -94,6 +95,7 @@ export default function CreateRoomPage() {
           scheduledAt,
           recurrenceType: isRecurring ? recurrenceType : "NONE",
           occurrences: isRecurring ? Number(occurrences) || 1 : 1,
+          typeCode: meetingType,
         });
         const rooms = response?.data || response || [];
         setScheduledRooms(Array.isArray(rooms) ? rooms : []);
@@ -112,6 +114,7 @@ export default function CreateRoomPage() {
       name: meetingName.trim(),
       description: description.trim(),
       scheduledAt,
+      typeCode: meetingType,
     };
 
     try {
@@ -398,6 +401,24 @@ export default function CreateRoomPage() {
                     enabled={generateAiMinutes}
                     onToggle={() => setGenerateAiMinutes((prev) => !prev)}
                   />
+                </div>
+
+                <div className="border-t border-slate-200/60 pt-4">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Loại cuộc họp (AI Summary Template)
+                  </label>
+                  <select
+                    value={meetingType}
+                    onChange={(event) => setMeetingType(event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  >
+                    <option value="GENERAL">Tiêu chuẩn / Cơ bản (GENERAL)</option>
+                    <option value="SCRUM_SYNC">Họp dự án / Đồng bộ (SCRUM_SYNC)</option>
+                    <option value="CLIENT_SALES">Gặp đối tác / Khách hàng (CLIENT_SALES)</option>
+                    <option value="BRAINSTORMING">Lên ý tưởng / Sáng tạo (BRAINSTORMING)</option>
+                    <option value="WEBINAR">Hội thảo / Đào tạo (WEBINAR)</option>
+                    <option value="INTERVIEW">Phỏng vấn / 1-on-1 (INTERVIEW)</option>
+                  </select>
                 </div>
               </div>
 

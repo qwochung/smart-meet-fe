@@ -22,4 +22,10 @@ export const transcriptService = {
     const response = await axiosClient.post(`/rooms/${roomCode}/transcript/finalize`);
     return unwrapResponse(response);
   },
+
+  async downloadPdfSummary(roomCode) {
+    return axiosClient.get(`/rooms/${roomCode}/summary/download`, {
+      responseType: 'blob'
+    });
+  },
 };
