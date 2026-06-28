@@ -20,10 +20,32 @@ export default function MeetingSummaryPage() {
   const { roomCode = 'product-sync' } = useParams();
   const [finalTranscript, setFinalTranscript] = useState(null);
   const [finalizeStatus, setFinalizeStatus] = useState('PROCESSING');
+  const [exporting, setExporting] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const blob = await transcriptService.downloadPdfSummary(roomCode);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Meeting_Minutes_${roomCode}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Tải file PDF thất bại:', err);
+      alert('Không thể tải báo cáo PDF. Vui lòng thử lại sau.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
-    let intervalId;
+    let timerId = null;
 
     const pollFinal = async () => {
       try {
@@ -32,10 +54,16 @@ export default function MeetingSummaryPage() {
         setFinalTranscript(data);
         if (data?.status === 'FINAL' || data?.status === 'FAILED') {
           setFinalizeStatus(data.status);
-          if (intervalId) clearInterval(intervalId);
+          return;
+        }
+        if (!cancelled) {
+          timerId = setTimeout(pollFinal, 2000);
         }
       } catch (err) {
         console.warn('[Summary] poll final transcript failed:', err);
+        if (!cancelled) {
+          timerId = setTimeout(pollFinal, 2000);
+        }
       }
     };
 
@@ -45,15 +73,16 @@ export default function MeetingSummaryPage() {
       } catch (err) {
         console.warn('[Summary] finalize transcript failed:', err);
       }
-      await pollFinal();
-      intervalId = setInterval(pollFinal, 2000);
+      if (!cancelled) {
+        await pollFinal();
+      }
     };
 
     start();
 
     return () => {
       cancelled = true;
-      if (intervalId) clearInterval(intervalId);
+      if (timerId) clearTimeout(timerId);
     };
   }, [roomCode]);
 
@@ -98,8 +127,14 @@ export default function MeetingSummaryPage() {
                 Quay lại danh sách họp
               </Button>
             </Link>
-            <Button variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-100" icon={Download}>
-              Xuất bản tóm tắt
+            <Button 
+              variant="outline" 
+              className="border-slate-300 text-slate-700 hover:bg-slate-100" 
+              icon={Download}
+              onClick={handleDownloadPdf}
+              disabled={exporting || finalizeStatus !== 'FINAL'}
+            >
+              {exporting ? 'Đang xuất file...' : 'Tải báo cáo PDF'}
             </Button>
             <Button icon={Sparkles}>Chia sẻ tổng kết AI</Button>
           </div>

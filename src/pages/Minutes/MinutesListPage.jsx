@@ -69,7 +69,7 @@ export default function MinutesListPage() {
       label: '',
       render: (row) =>
         row.status === 'ENDED' ? (
-          <Link to={`/minutes/${row.roomCode}/summ`} className="text-primary-600 hover:text-primary-700">
+          <Link to={`/minutes/${row.roomCode}/summary`} className="text-primary-600 hover:text-primary-700">
             Xem
           </Link>
         ) : null,
