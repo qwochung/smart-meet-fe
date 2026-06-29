@@ -23,9 +23,25 @@ export const transcriptService = {
     return unwrapResponse(response);
   },
 
-  async downloadPdfSummary(roomCode) {
+  async getSummary(roomCode) {
+    const response = await axiosClient.get(`/rooms/${roomCode}/summary`);
+    return unwrapResponse(response);
+  },
+
+  async updateSummary(roomCode, payload) {
+    const response = await axiosClient.put(`/rooms/${roomCode}/summary`, payload);
+    return unwrapResponse(response);
+  },
+
+  async downloadSummary(roomCode, format = 'pdf') {
     return axiosClient.get(`/rooms/${roomCode}/summary/download`, {
-      responseType: 'blob'
+      params: { format },
+      responseType: 'blob',
     });
+  },
+
+  // Giữ tương thích ngược: tải PDF
+  async downloadPdfSummary(roomCode) {
+    return this.downloadSummary(roomCode, 'pdf');
   },
 };

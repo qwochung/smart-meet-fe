@@ -156,7 +156,7 @@ export default function MinutesListPage() {
                   <p className="mt-2 text-sm text-slate-600">{item.description}</p>
                   {item.status === 'ENDED' && (
                     <Link
-                      to={`/minutes/${item.roomCode}`}
+                      to={`/minutes/${item.roomCode}/summary`}
                       className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700"
                     >
                       <FileText className="h-4 w-4" />
