@@ -4,11 +4,21 @@ import { CalendarDays, FileText, Filter, Plus, Search } from 'lucide-react';
 import { Button, Card, DataTable } from '../../components/common';
 import { roomService } from '../../services/roomService';
 
+const PAGE_SIZE = 10;
+
 export default function MinutesListPage() {
   const [minutes, setMinutes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+
+  // Đổi bộ lọc thì quay về trang đầu
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, filterDate]);
 
   useEffect(() => {
     const fetchMinutes = async () => {
@@ -17,9 +27,15 @@ export default function MinutesListPage() {
         const response = await roomService.getRoomMinutes({
           name: searchQuery || undefined,
           date: filterDate || undefined,
+          page,
+          size: PAGE_SIZE,
         });
-        const data = Array.isArray(response) ? response : (response?.data || []);
+        const payload = response?.data ?? response ?? {};
+        // BE mới trả { items, page, size, totalElements, totalPages }; giữ fallback mảng cũ
+        const data = Array.isArray(payload) ? payload : payload.items || [];
         setMinutes(data);
+        setTotalPages(Array.isArray(payload) ? 1 : payload.totalPages || 0);
+        setTotalElements(Array.isArray(payload) ? payload.length : payload.totalElements || 0);
       } catch (error) {
         console.error('Error fetching room minutes:', error);
       } finally {
@@ -32,7 +48,7 @@ export default function MinutesListPage() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, filterDate]);
+  }, [searchQuery, filterDate, page]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -166,6 +182,57 @@ export default function MinutesListPage() {
                 </article>
               ))}
             </div>
+
+            {totalPages > 1 && (
+              <div className="mt-4 flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-4 sm:flex-row">
+                <p className="text-sm text-slate-500">
+                  Trang {page + 1}/{totalPages} — {totalElements} biên bản
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={page === 0}
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Trước
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i)
+                    .filter((i) => i === 0 || i === totalPages - 1 || Math.abs(i - page) <= 1)
+                    .reduce((acc, i, idx, arr) => {
+                      if (idx > 0 && i - arr[idx - 1] > 1) acc.push('gap-' + i);
+                      acc.push(i);
+                      return acc;
+                    }, [])
+                    .map((i) =>
+                      typeof i === 'string' ? (
+                        <span key={i} className="px-1 text-slate-400">…</span>
+                      ) : (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setPage(i)}
+                          className={`min-w-[36px] rounded-lg border px-2 py-1.5 text-sm ${
+                            i === page
+                              ? 'border-primary-600 bg-primary-600 text-white'
+                              : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                      ),
+                    )}
+                  <button
+                    type="button"
+                    disabled={page >= totalPages - 1}
+                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Sau
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </Card>

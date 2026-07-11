@@ -5,25 +5,30 @@ import { transcriptService } from "../services/transcriptService";
 import { tokenStorage } from "../api/tokenStorage";
 import apiConfig from "../configs/apiConfig";
 
-const applySegmentUpdate = (segments, incoming, type) => {
+// Server sort lại và đánh số orderIndex cho TOÀN BỘ segment mỗi lần append,
+// nhưng chỉ push 1 segment qua WS — nên không thể dùng orderIndex làm khóa định danh.
+// Dùng sourceChunkId (ổn định theo chunk) để upsert, rồi sort theo thời gian.
+const segmentKey = (s) =>
+  s?.sourceChunkId != null ? `chunk:${s.sourceChunkId}` : `idx:${s?.orderIndex}`;
+
+const sortSegments = (segments) =>
+  [...segments].sort((a, b) => {
+    const at = a.startTimeMs ?? Number.MAX_SAFE_INTEGER;
+    const bt = b.startTimeMs ?? Number.MAX_SAFE_INTEGER;
+    if (at !== bt) return at - bt;
+    return (a.orderIndex ?? 0) - (b.orderIndex ?? 0);
+  });
+
+const applySegmentUpdate = (segments, incoming) => {
   if (!incoming) return segments;
 
-  if (type === "SEGMENT_UPDATE") {
-    const exists = segments.some((s) => s.orderIndex === incoming.orderIndex);
-    if (exists) {
-      return segments.map((s) =>
-        s.orderIndex === incoming.orderIndex ? { ...s, ...incoming } : s,
-      );
-    }
-  }
+  const key = segmentKey(incoming);
+  const exists = segments.some((s) => segmentKey(s) === key);
+  const next = exists
+    ? segments.map((s) => (segmentKey(s) === key ? { ...s, ...incoming } : s))
+    : [...segments, incoming];
 
-  const duplicate = segments.some((s) => s.orderIndex === incoming.orderIndex);
-  if (duplicate) {
-    return segments.map((s) =>
-      s.orderIndex === incoming.orderIndex ? { ...s, ...incoming } : s,
-    );
-  }
-  return [...segments, incoming].sort((a, b) => a.orderIndex - b.orderIndex);
+  return sortSegments(next);
 };
 
 export const useMergedTranscript = ({ enabled = false, roomId } = {}) => {
@@ -69,10 +74,9 @@ export const useMergedTranscript = ({ enabled = false, roomId } = {}) => {
             try {
               const data = JSON.parse(frame.body);
               const incoming = data.segment;
-              const type = data.type || "SEGMENT_APPEND";
 
               if (incoming) {
-                setSegments((prev) => applySegmentUpdate(prev, incoming, type));
+                setSegments((prev) => applySegmentUpdate(prev, incoming));
               }
               if (typeof data.version === "number") {
                 setVersion(data.version);

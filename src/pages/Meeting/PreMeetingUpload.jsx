@@ -419,6 +419,16 @@ export default function PreMeetingUpload({
       const response = await documentApi.getDocuments(roomCode);
       const docs = Array.isArray(response?.data) ? response.data : [];
       setItems(docs.map(mapDocumentToItem));
+      // Tài liệu đã có tóm tắt AI từ trước thì hiển thị lại luôn
+      setAiSummaries((prev) => {
+        const next = { ...prev };
+        docs.forEach((doc) => {
+          if (doc.summary) {
+            next[`doc-${doc.id}`] = doc.summary;
+          }
+        });
+        return next;
+      });
     } catch (error) {
       setActionError(
         error?.response?.data?.message ||
@@ -565,29 +575,44 @@ export default function PreMeetingUpload({
   };
 
   const handleAiSummarize = async () => {
-    const doneItems = items.filter((i) => i.status === "done");
-    if (!doneItems.length) return;
+    // Chỉ tóm tắt các tài liệu đã upload xong và chưa có tóm tắt
+    const targets = items.filter(
+      (i) => i.status === "done" && i.documentId && !aiSummaries[i.id],
+    );
+    if (!targets.length || !roomCode) return;
+
+    setActionError("");
     setAiProcessing(true);
 
-    await new Promise((r) => setTimeout(r, 1800));
+    const results = await Promise.allSettled(
+      targets.map((item) =>
+        documentApi
+          .summarizeDocument(roomCode, item.documentId)
+          .then((response) => ({ itemId: item.id, doc: response?.data })),
+      ),
+    );
 
-    const mockSummaries = {
-      pdf: "Tài liệu trình bày chiến lược sản phẩm Q2, bao gồm roadmap tính năng và các KPI cần đạt.",
-      pptx: "Slide deck gồm 14 trang, nêu bật vấn đề thị trường, giải pháp đề xuất và kế hoạch triển khai 6 tháng.",
-      docx: "Báo cáo phân tích kỹ thuật với 3 phương án kiến trúc, so sánh ưu nhược điểm và đề xuất lựa chọn tối ưu.",
-      default:
-        "Nội dung chính đã được trích xuất. Tài liệu sẵn sàng để chia sẻ với người tham dự.",
-    };
-
-    const summaries = {};
-    doneItems.forEach((item) => {
-      const ext = item.file.name.split(".").pop()?.toLowerCase();
-      summaries[item.id] = mockSummaries[ext] || mockSummaries.default;
+    const summaries = { ...aiSummaries };
+    let failedCount = 0;
+    results.forEach((result) => {
+      if (result.status === "fulfilled" && result.value?.doc?.summary) {
+        summaries[result.value.itemId] = result.value.doc.summary;
+      } else {
+        failedCount += 1;
+      }
     });
 
     setAiSummaries(summaries);
     persistUploadSnapshot(items, summaries);
     setAiProcessing(false);
+
+    if (failedCount > 0) {
+      setActionError(
+        failedCount === targets.length
+          ? "Không thể tóm tắt tài liệu. Vui lòng thử lại sau."
+          : `Đã tóm tắt xong, nhưng ${failedCount} tài liệu bị lỗi. Vui lòng thử lại.`,
+      );
+    }
   };
 
   const allDone = items.length > 0 && items.every((i) => i.status === "done");
@@ -837,7 +862,7 @@ export default function PreMeetingUpload({
                   }}
                 >
                   <Sparkles size={14} />
-                  Tóm tắt nội dung (demo)
+                  Tóm tắt nội dung bằng AI
                 </p>
                 <p
                   style={{
@@ -846,11 +871,13 @@ export default function PreMeetingUpload({
                     margin: 0,
                   }}
                 >
-                  Gợi ý nhanh trước cuộc họp — có thể nối API thật sau
+                  AI đọc tài liệu và tóm tắt các điểm chính trước cuộc họp
                 </p>
               </div>
 
-              {Object.keys(aiSummaries).length === 0 ? (
+              {items.some(
+                (i) => i.status === "done" && i.documentId && !aiSummaries[i.id],
+              ) ? (
                 <button
                   type="button"
                   onClick={handleAiSummarize}

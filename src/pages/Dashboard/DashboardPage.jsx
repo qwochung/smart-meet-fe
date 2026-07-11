@@ -70,12 +70,13 @@ export default function DashboardPage() {
       try {
         const [dashboardRes, meetingsRes] = await Promise.all([
           roomService.getDashboard(),
-          roomService.getRoomMinutes({}),
+          roomService.getRoomMinutes({ page: 0, size: 100 }),
         ]);
         const data = dashboardRes?.data ?? dashboardRes ?? {};
-        const meetings = Array.isArray(meetingsRes)
-          ? meetingsRes
-          : meetingsRes?.data ?? [];
+        const meetingsPayload = meetingsRes?.data ?? meetingsRes ?? {};
+        const meetings = Array.isArray(meetingsPayload)
+          ? meetingsPayload
+          : meetingsPayload.items ?? [];
         if (!cancelled) {
           setDashboard({ ...EMPTY_DASHBOARD, ...data });
           setAllMeetings(Array.isArray(meetings) ? meetings : []);
