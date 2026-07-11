@@ -32,4 +32,12 @@ export const documentApi = {
   deleteDocument: async (roomCode, documentId) => {
     return axiosClient.delete(`/rooms/${roomCode}/documents/${documentId}`);
   },
+
+  summarizeDocument: async (roomCode, documentId, { force = false } = {}) => {
+    return axiosClient.post(
+      `/rooms/${roomCode}/documents/${documentId}/summary`,
+      null,
+      { params: { force } },
+    );
+  },
 };

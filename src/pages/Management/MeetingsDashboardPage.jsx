@@ -24,10 +24,41 @@ const formatMeetingDate = (value) => {
 
 const startOf = (meeting) => meeting.scheduledAt || meeting.expiresAt;
 
+const LIST_PAGE_SIZE = 5;
+
+function ListPager({ page, totalPages, onChange }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="mt-3 flex items-center justify-end gap-2 border-t border-slate-200 pt-3">
+      <button
+        type="button"
+        disabled={page === 0}
+        onClick={() => onChange(Math.max(0, page - 1))}
+        className="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Trước
+      </button>
+      <span className="text-sm text-slate-500">
+        {page + 1}/{totalPages}
+      </span>
+      <button
+        type="button"
+        disabled={page >= totalPages - 1}
+        onClick={() => onChange(Math.min(totalPages - 1, page + 1))}
+        className="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Sau
+      </button>
+    </div>
+  );
+}
+
 export default function MeetingsDashboardPage() {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [upcomingPage, setUpcomingPage] = useState(0);
+  const [pastPage, setPastPage] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,8 +66,10 @@ export default function MeetingsDashboardPage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await roomService.getRoomMinutes({});
-        const data = Array.isArray(response) ? response : response?.data || [];
+        // Lấy tối đa 100 cuộc họp gần nhất để dựng lịch; danh sách bên dưới phân trang client-side
+        const response = await roomService.getRoomMinutes({ page: 0, size: 100 });
+        const payload = response?.data ?? response ?? {};
+        const data = Array.isArray(payload) ? payload : payload.items || [];
         if (!cancelled) {
           setMeetings(Array.isArray(data) ? data : []);
         }
@@ -71,6 +104,17 @@ export default function MeetingsDashboardPage() {
         .filter((m) => m.status === 'ENDED')
         .sort((a, b) => new Date(b.expiresAt) - new Date(a.expiresAt)),
     [meetings],
+  );
+
+  const upcomingTotalPages = Math.ceil(upcoming.length / LIST_PAGE_SIZE);
+  const pastTotalPages = Math.ceil(past.length / LIST_PAGE_SIZE);
+  const upcomingVisible = useMemo(
+    () => upcoming.slice(upcomingPage * LIST_PAGE_SIZE, (upcomingPage + 1) * LIST_PAGE_SIZE),
+    [upcoming, upcomingPage],
+  );
+  const pastVisible = useMemo(
+    () => past.slice(pastPage * LIST_PAGE_SIZE, (pastPage + 1) * LIST_PAGE_SIZE),
+    [past, pastPage],
   );
 
   const calendarEvents = useMemo(
@@ -111,7 +155,7 @@ export default function MeetingsDashboardPage() {
             </p>
           ) : (
             <div className="space-y-3">
-              {upcoming.map((meeting) => {
+              {upcomingVisible.map((meeting) => {
                 const badge = STATUS_BADGE[meeting.status] ?? {
                   label: meeting.status,
                   className: 'bg-slate-100 text-slate-600',
@@ -138,6 +182,11 @@ export default function MeetingsDashboardPage() {
                   </Link>
                 );
               })}
+              <ListPager
+                page={upcomingPage}
+                totalPages={upcomingTotalPages}
+                onChange={setUpcomingPage}
+              />
             </div>
           )}
         </Card>
@@ -154,7 +203,7 @@ export default function MeetingsDashboardPage() {
           </p>
         ) : (
           <div className="space-y-3">
-            {past.map((meeting) => (
+            {pastVisible.map((meeting) => (
               <Link
                 key={meeting.roomCode}
                 to={`/meetings/${meeting.roomCode}`}
@@ -169,6 +218,7 @@ export default function MeetingsDashboardPage() {
                 </span>
               </Link>
             ))}
+            <ListPager page={pastPage} totalPages={pastTotalPages} onChange={setPastPage} />
           </div>
         )}
       </Card>

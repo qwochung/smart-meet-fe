@@ -19,6 +19,18 @@ export const roomApi = {
     });
   },
 
+  rejectJoinRequest: async (roomCode, data) => {
+    return await axiosClient.post(`/rooms/${roomCode}/join/reject`, data, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  },
+
+  endRoom: async (roomCode) => {
+    return await axiosClient.post(`/rooms/${roomCode}/end`);
+  },
+
   getRoomMinutes: async (params) => {
     return await axiosClient.get('/rooms/minutes', { params });
   },

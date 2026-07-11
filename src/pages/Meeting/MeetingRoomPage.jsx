@@ -38,10 +38,8 @@ import { useMergedTranscript } from "../../hooks/useMergedTranscript";
 import LiveTranscriptPanel from "./LiveTranscriptPanel";
 
 export default function MeetingRoomPage() {
+  // Không được return sớm trước các hooks (Rules of Hooks) — guard chuyển xuống trước phần render
   const currentUser = getStoredUser();
-  if (!currentUser) {
-    return <Navigate to="/auth/login" replace />;
-  }
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -105,8 +103,8 @@ export default function MeetingRoomPage() {
     createInitialMessages(sessionRole === "HOST"),
   );
   const displayMessages = useMemo(() => {
-    const liveMessages = (chatMessages || []).map((msg) => ({
-      id: `${msg.senderId}-${msg.sentAt}`,
+    const liveMessages = (chatMessages || []).map((msg, index) => ({
+      id: `${msg.senderId}-${msg.sentAt}-${index}`,
       sender: msg.senderName || "Người dùng",
       time: new Date(msg.sentAt).toLocaleTimeString("vi-VN", {
         hour: "2-digit",
@@ -251,7 +249,11 @@ export default function MeetingRoomPage() {
   };
 
   const handleRejectParticipant = (userId) => {
+    if (userId == null || userId === "") return;
     setPendingParticipants((prev) => prev.filter((p) => p.id !== userId));
+    api.room
+      .rejectJoinRequest(roomCode, { userId: Number(userId) })
+      .catch((e) => console.error("Reject join request failed:", e));
   };
 
   // Fetch room info
@@ -644,7 +646,19 @@ export default function MeetingRoomPage() {
 
   const copyRoomLink = async () => {
     try {
-      await navigator.clipboard.writeText(roomJoinLink);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(roomJoinLink);
+      } else {
+        // Fallback cho môi trường không có Clipboard API (HTTP không secure context)
+        const textarea = document.createElement("textarea");
+        textarea.value = roomJoinLink;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+      }
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch (error) {
@@ -677,6 +691,19 @@ export default function MeetingRoomPage() {
     () => getParticipantGridStyle(participantCount),
     [participantCount],
   );
+
+  // Host rời họp = kết thúc phòng để backend chốt biên bản ngay,
+  // thay vì chờ cron dọn phòng hết hạn (~15 phút một lần)
+  const handleLeave = async () => {
+    if (isHost) {
+      try {
+        await api.room.endRoom(roomCode);
+      } catch (error) {
+        console.error("End room failed:", error);
+      }
+    }
+    navigate(`/minutes/${roomCode}/summary`);
+  };
 
   const [asrEnabled, setAsrEnabled] = useState(false);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
@@ -725,6 +752,9 @@ export default function MeetingRoomPage() {
     }
   };
 
+  if (!currentUser) {
+    return <Navigate to="/auth/login" replace />;
+  }
   if (isChecking) {
     return (
       <LoadingPage
@@ -1045,7 +1075,7 @@ export default function MeetingRoomPage() {
           onToggleScreenShare={handleToggleScreenShare}
           onToggleAsr={handleToggleAsr}
           onToggleParticipants={toggleParticipantsPanel}
-          onLeave={() => navigate(`/minutes/${roomCode}/summary`)}
+          onLeave={handleLeave}
           whiteboardActive={whiteboardActive}
           onToggleWhiteboard={() => setWhiteboardActive((prev) => !prev)}
           isWhiteboardAllowed={Boolean(screenShareParticipant)}
