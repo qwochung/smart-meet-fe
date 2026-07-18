@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, FileText } from 'lucide-react';
-import { Button, Card } from '../../components/common';
+import { Button, Card, Header } from '../../components/common';
 import { transcriptService } from '../../services/transcriptService';
 import MeetingMinutesEditor from '../../components/meeting/MeetingMinutesEditor';
 
@@ -56,7 +56,9 @@ export default function MeetingSummaryPage() {
   const transcriptSegments = Array.isArray(finalTranscript?.segments) ? finalTranscript.segments : [];
 
   return (
-    <div className="min-h-full bg-slate-50 px-4 py-6 text-slate-900 md:px-10 lg:px-16">
+    <>
+      <Header variant="app" fixed />
+      <div className="min-h-full bg-slate-50 px-4 py-6 text-slate-900 md:px-10 lg:px-16">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Hero */}
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
@@ -133,5 +135,6 @@ export default function MeetingSummaryPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
