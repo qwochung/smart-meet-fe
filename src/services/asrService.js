@@ -5,6 +5,7 @@
 export const STOMP_DESTINATIONS = {
   sendAudio: (roomId) => `/app/ws/rooms/${roomId}/audio`,
   transcript: (roomId) => `/topic/rooms/${roomId}/transcript`,
+  chunkAck: (roomId) => `/topic/rooms/${roomId}/chunk-ack`,
   draftTranscript: (roomId) => `/topic/rooms/${roomId}/transcript/draft`,
   mergedTranscript: (roomId) => `/topic/rooms/${roomId}/transcript/merged`,
 };
