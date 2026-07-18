@@ -35,6 +35,10 @@ export const useASRPipeline = ({
   const lastTextRef = useRef("");
   // Queue chunks khi STOMP chưa connected
   const pendingQueueRef = useRef([]);
+  // Theo dõi chunk đã gửi vs chunk BE đã ack (xử lý xong) — để đợi trước khi finalize
+  const sentIndicesRef = useRef(new Set());
+  const ackedIndicesRef = useRef(new Set());
+  const ackSubscriptionRef = useRef(null);
 
   // ─── Kết nối STOMP (dùng chung endpoint ws/meet của dự án) ────────────────
   useEffect(() => {
@@ -53,6 +57,17 @@ export const useASRPipeline = ({
         setIsConnected(true);
         console.log("[ASR] STOMP connected");
 
+        // Nhận ack "đã xử lý xong chunk" từ BE (subscribe TRƯỚC khi flush để không sót ack)
+        ackSubscriptionRef.current = client.subscribe(
+          STOMP_DESTINATIONS.chunkAck(roomId),
+          (frame) => {
+            try {
+              const { chunkIndex } = JSON.parse(frame.body);
+              if (chunkIndex != null) ackedIndicesRef.current.add(chunkIndex);
+            } catch {}
+          },
+        );
+
         // Flush queue nếu có chunk đến trước khi connect xong
         const pending = pendingQueueRef.current.splice(0);
         pending.forEach((payload) => {
@@ -61,6 +76,7 @@ export const useASRPipeline = ({
               destination: STOMP_DESTINATIONS.sendAudio(roomId),
               body: JSON.stringify(payload),
             });
+            sentIndicesRef.current.add(payload.chunkIndex);
           } catch {}
         });
       },
@@ -86,6 +102,7 @@ export const useASRPipeline = ({
 
     return () => {
       subscriptionRef.current?.unsubscribe();
+      ackSubscriptionRef.current?.unsubscribe();
       client.deactivate();
       stompClientRef.current = null;
       setIsConnected(false);
@@ -116,6 +133,7 @@ export const useASRPipeline = ({
             destination: STOMP_DESTINATIONS.sendAudio(roomId),
             body: JSON.stringify(payload),
           });
+          sentIndicesRef.current.add(payload.chunkIndex);
         } catch (err) {
           console.error("[ASR] Publish failed:", err);
           onError?.({ type: "PUBLISH_FAILED", err });
@@ -154,6 +172,33 @@ export const useASRPipeline = ({
     [transcriptSegments],
   );
 
+  /**
+   * Đợi BE ack (xử lý xong) hết các chunk đã gửi, hoặc tới timeout.
+   * Gọi trước khi kết thúc họp/finalize để không bỏ sót chunk cuối còn đang dịch.
+   * @returns {Promise<boolean>} true nếu mọi chunk đã ack, false nếu hết giờ.
+   */
+  const waitForPendingAcks = useCallback((timeoutMs = 8000) => {
+    return new Promise((resolve) => {
+      const start = Date.now();
+      const allAcked = () => {
+        for (const idx of sentIndicesRef.current) {
+          if (!ackedIndicesRef.current.has(idx)) return false;
+        }
+        return true;
+      };
+      if (allAcked()) {
+        resolve(true);
+        return;
+      }
+      const timer = setInterval(() => {
+        if (allAcked() || Date.now() - start >= timeoutMs) {
+          clearInterval(timer);
+          resolve(allAcked());
+        }
+      }, 150);
+    });
+  }, []);
+
   return {
     transcriptSegments,
     isCapturing,
@@ -163,5 +208,6 @@ export const useASRPipeline = ({
     voiceActive,
     clearTranscript,
     getFullTranscript,
+    waitForPendingAcks,
   };
 };

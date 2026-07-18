@@ -36,6 +36,14 @@ export default function MeetingSummaryPage() {
 
     const start = async () => {
       try {
+        // Mở lại trang mà biên bản đã FINAL/FAILED rồi thì khỏi gọi finalize lại
+        const current = await transcriptService.getFinalTranscript(roomCode);
+        if (cancelled) return;
+        setFinalTranscript(current);
+        if (current?.status === 'FINAL' || current?.status === 'FAILED') {
+          setFinalizeStatus(current.status);
+          return;
+        }
         await transcriptService.finalizeTranscript(roomCode);
       } catch (err) {
         console.warn('[Summary] finalize transcript failed:', err);

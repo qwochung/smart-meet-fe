@@ -695,6 +695,13 @@ export default function MeetingRoomPage() {
   // Host rời họp = kết thúc phòng để backend chốt biên bản ngay,
   // thay vì chờ cron dọn phòng hết hạn (~15 phút một lần)
   const handleLeave = async () => {
+    // Đợi BE xử lý xong các chunk audio đã gửi (chunk cuối còn đang dịch) trước khi
+    // chốt biên bản, tránh finalize khi ASR chưa dịch xong -> report thiếu dữ liệu.
+    try {
+      await waitForPendingAcks?.(8000);
+    } catch {
+      // Hết timeout vẫn đi tiếp — BE còn counter in-flight làm lưới an toàn.
+    }
     if (isHost) {
       try {
         await api.room.endRoom(roomCode);
@@ -724,6 +731,7 @@ export default function MeetingRoomPage() {
     voiceActive,
     clearTranscript,
     getFullTranscript,
+    waitForPendingAcks,
   } = useASRPipeline({
     enabled: effectiveAsrEnabled,
     micActive,
