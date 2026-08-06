@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Card, Input } from '../../components/common';
+import MeetingTypeSettings from './MeetingTypeSettings';
 
 const tabs = [
   { id: 'profile', label: 'Hồ sơ' },
   { id: 'password', label: 'Mật khẩu' },
+  { id: 'meetingTypes', label: 'Loại cuộc họp' },
   { id: 'notifications', label: 'Thông báo' },
 ];
 
@@ -28,7 +30,7 @@ export default function AccountSettingsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Cài đặt tài khoản</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Quản lý hồ sơ, mật khẩu và tùy chọn thông báo.
+          Quản lý hồ sơ, mật khẩu, loại cuộc họp và tùy chọn thông báo.
           {user?.name ? ` Đang đăng nhập với ${user.name}.` : ''}
         </p>
       </div>
@@ -82,6 +84,8 @@ export default function AccountSettingsPage() {
               </div>
             </form>
           )}
+
+          {activeTab === 'meetingTypes' && <MeetingTypeSettings />}
 
           {activeTab === 'notifications' && (
             <div className="space-y-3 text-sm text-slate-700">
