@@ -184,6 +184,41 @@ export default function MeetingMinutesEditor({ roomCode }) {
     );
   }
 
+  // Mẫu VERBATIM không đi qua bước tóm tắt AI nên không có các mục để chỉnh sửa,
+  // chỉ hiển thị bản ghi gần như nguyên văn và cho phép xuất file.
+  if (detail?.minutesFormat === 'VERBATIM') {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-3">
+              <Stat label="Thời lượng" value={formatDuration(detail?.durationMinutes)} />
+              <Stat label="Người tham gia" value={String(detail?.attendeeCount ?? 0)} />
+              <Stat label="Chủ trì" value={detail?.hostName || '—'} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <ExportButtons exporting={exporting} onExport={handleExport} />
+            </div>
+          </div>
+        </Card>
+
+        <Card
+          title="Biên bản nguyên văn"
+          subtitle="Nội dung hội thoại được giữ gần như nguyên văn, chỉ qua bước hiệu đính chính tả"
+        >
+          <SectionIcon icon={FileText} />
+          <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            Mẫu Verbatim minutes không sinh tóm tắt, đầu việc hay quyết định. Nếu bạn cần các mục đó,
+            hãy chọn mẫu Action hoặc Discussion khi tạo cuộc họp.
+          </p>
+          <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
+            {detail?.verbatimText || 'Chưa có nội dung hội thoại được ghi lại.'}
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   const s = editing ? draft : normalize(detail?.summary);
 
   return (
@@ -211,24 +246,7 @@ export default function MeetingMinutesEditor({ roomCode }) {
                 <Button variant="outline" icon={Pencil} onClick={() => setEditing(true)}>
                   Chỉnh sửa
                 </Button>
-                <Button
-                  variant="outline"
-                  icon={Download}
-                  loading={exporting === 'pdf'}
-                  disabled={!!exporting}
-                  onClick={() => handleExport('pdf')}
-                >
-                  Xuất PDF
-                </Button>
-                <Button
-                  variant="outline"
-                  icon={FileText}
-                  loading={exporting === 'docx'}
-                  disabled={!!exporting}
-                  onClick={() => handleExport('docx')}
-                >
-                  Xuất DOCX
-                </Button>
+                <ExportButtons exporting={exporting} onExport={handleExport} />
               </>
             )}
           </div>
@@ -440,6 +458,31 @@ export default function MeetingMinutesEditor({ roomCode }) {
         </Card>
       )}
     </div>
+  );
+}
+
+function ExportButtons({ exporting, onExport }) {
+  return (
+    <>
+      <Button
+        variant="outline"
+        icon={Download}
+        loading={exporting === 'pdf'}
+        disabled={!!exporting}
+        onClick={() => onExport('pdf')}
+      >
+        Xuất PDF
+      </Button>
+      <Button
+        variant="outline"
+        icon={FileText}
+        loading={exporting === 'docx'}
+        disabled={!!exporting}
+        onClick={() => onExport('docx')}
+      >
+        Xuất DOCX
+      </Button>
+    </>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
@@ -12,7 +12,29 @@ import {
 import { Button, Card } from "../../components/common";
 import { getStoredUser } from "../../utils/auth.js";
 import { roomService, roomSessionStorage } from "../../services/roomService";
+import { meetingTypeService } from "../../services/meetingTypeService";
 import PreMeetingUpload from "./PreMeetingUpload.jsx";
+
+const MINUTES_FORMAT_OPTIONS = [
+  {
+    value: "ACTION",
+    label: "Biên bản hành động (Action minutes)",
+    description:
+      "Chỉ ghi kết luận và đầu việc phát sinh, lược bỏ diễn biến thảo luận. Ngắn gọn, dễ scan lại.",
+  },
+  {
+    value: "DISCUSSION",
+    label: "Biên bản thảo luận (Discussion minutes)",
+    description:
+      "Ghi thêm diễn biến thảo luận, quan điểm các bên và lý do dẫn tới quyết định.",
+  },
+  {
+    value: "VERBATIM",
+    label: "Biên bản nguyên văn (Verbatim minutes)",
+    description:
+      "Giữ gần như nguyên văn lời thoại, không qua bước tóm tắt AI. Dùng khi cần độ chính xác từng câu chữ.",
+  },
+];
 
 function Toggle({ enabled, onToggle }) {
   return (
@@ -33,6 +55,11 @@ export default function CreateRoomPage() {
   const [meetingName, setMeetingName] = useState("");
   const [description, setDescription] = useState("");
   const [meetingType, setMeetingType] = useState("GENERAL");
+  // Loại cuộc họp do người dùng bật trong Cài đặt tài khoản (gồm cả loại tự tạo)
+  const [meetingTypes, setMeetingTypes] = useState([]);
+  const [minutesFormat, setMinutesFormat] = useState("ACTION");
+  // Khi người dùng đã tự chọn mẫu biên bản thì không tự đổi theo loại cuộc họp nữa
+  const [minutesFormatTouched, setMinutesFormatTouched] = useState(false);
   const navigate = useNavigate();
   const [date, setDate] = useState(() => {
     const d = new Date();
@@ -52,6 +79,49 @@ export default function CreateRoomPage() {
   const [scheduledRooms, setScheduledRooms] = useState(null);
 
   const isRecurring = recurrenceType !== "NONE";
+  const suggestedFormatOf = (typeCode) =>
+    meetingTypes.find((type) => type.code === typeCode)?.defaultMinutesFormat ?? "ACTION";
+  const suggestedFormat = suggestedFormatOf(meetingType);
+  const selectedFormatOption = MINUTES_FORMAT_OPTIONS.find(
+    (option) => option.value === minutesFormat,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTypes = async () => {
+      try {
+        const data = await meetingTypeService.getEnabledMeetingTypes();
+        if (cancelled) return;
+        const list = Array.isArray(data) ? data : data?.data ?? [];
+        setMeetingTypes(list);
+
+        // Loại đang chọn có thể đã bị người dùng tắt trong Cài đặt tài khoản
+        const fallback = list.find((type) => type.code === "GENERAL") ?? list[0];
+        const current = list.find((type) => type.code === meetingType) ?? fallback;
+        if (current) {
+          setMeetingType(current.code);
+          setMinutesFormat(current.defaultMinutesFormat ?? "ACTION");
+        }
+      } catch (loadError) {
+        console.warn("[CreateRoom] load meeting types failed:", loadError);
+      }
+    };
+
+    loadTypes();
+    return () => {
+      cancelled = true;
+    };
+    // Chỉ tải một lần khi vào trang; meetingType cố ý không nằm trong deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleMeetingTypeChange = (nextType) => {
+    setMeetingType(nextType);
+    if (!minutesFormatTouched) {
+      setMinutesFormat(suggestedFormatOf(nextType));
+    }
+  };
   const scheduledPreview = date && time ? new Date(`${date}T${time}:00`) : null;
   const isScheduledFuture =
     scheduledPreview && scheduledPreview.getTime() > Date.now();
@@ -96,6 +166,7 @@ export default function CreateRoomPage() {
           recurrenceType: isRecurring ? recurrenceType : "NONE",
           occurrences: isRecurring ? Number(occurrences) || 1 : 1,
           typeCode: meetingType,
+          minutesFormat,
         });
         const rooms = response?.data || response || [];
         setScheduledRooms(Array.isArray(rooms) ? rooms : []);
@@ -115,6 +186,7 @@ export default function CreateRoomPage() {
       description: description.trim(),
       scheduledAt,
       typeCode: meetingType,
+      minutesFormat,
     };
 
     try {
@@ -409,16 +481,49 @@ export default function CreateRoomPage() {
                   </label>
                   <select
                     value={meetingType}
-                    onChange={(event) => setMeetingType(event.target.value)}
+                    onChange={(event) => handleMeetingTypeChange(event.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
                   >
-                    <option value="GENERAL">Tiêu chuẩn / Cơ bản (GENERAL)</option>
-                    <option value="SCRUM_SYNC">Họp dự án / Đồng bộ (SCRUM_SYNC)</option>
-                    <option value="CLIENT_SALES">Gặp đối tác / Khách hàng (CLIENT_SALES)</option>
-                    <option value="BRAINSTORMING">Lên ý tưởng / Sáng tạo (BRAINSTORMING)</option>
-                    <option value="WEBINAR">Hội thảo / Đào tạo (WEBINAR)</option>
-                    <option value="INTERVIEW">Phỏng vấn / 1-on-1 (INTERVIEW)</option>
+                    {meetingTypes.length === 0 ? (
+                      <option value={meetingType}>Đang tải loại cuộc họp...</option>
+                    ) : (
+                      meetingTypes.map((type) => (
+                        <option key={type.code} value={type.code}>
+                          {type.label}
+                          {type.builtIn ? "" : " (của bạn)"}
+                        </option>
+                      ))
+                    )}
                   </select>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Bật/tắt hoặc tạo loại cuộc họp riêng trong Cài đặt tài khoản → Loại cuộc họp.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Mẫu biên bản (mức độ chi tiết)
+                  </label>
+                  <select
+                    value={minutesFormat}
+                    onChange={(event) => {
+                      setMinutesFormat(event.target.value);
+                      setMinutesFormatTouched(true);
+                    }}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  >
+                    {MINUTES_FORMAT_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                        {option.value === suggestedFormat ? " — gợi ý" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedFormatOption && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      {selectedFormatOption.description}
+                    </p>
+                  )}
                 </div>
               </div>
 
