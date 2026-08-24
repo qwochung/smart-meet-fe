@@ -1,4 +1,11 @@
-import { FileText, Info, MessageSquare, Settings, Users } from "lucide-react";
+import {
+  Captions,
+  FileText,
+  Info,
+  MessageSquare,
+  Settings,
+  Users,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 function HeaderActionButton({ button }) {
@@ -75,6 +82,9 @@ export default function MeetingRoomHeader({
   onToggleParticipants,
   onToggleSummary,
   summaryCount = 0,
+  transcriptAvailable = false,
+  transcriptOpen = false,
+  onToggleTranscript,
 }) {
   const actionButtons = [
     {
@@ -97,6 +107,15 @@ export default function MeetingRoomHeader({
       badgeLabel: summaryCount > 0 ? summaryCount : null,
       active: summaryOpen,
     },
+    ...(transcriptAvailable
+      ? [
+          {
+            icon: <Captions size={15} />,
+            onClick: onToggleTranscript,
+            active: transcriptOpen,
+          },
+        ]
+      : []),
     { icon: <Info size={15} /> },
     { icon: <Settings size={15} /> },
   ];

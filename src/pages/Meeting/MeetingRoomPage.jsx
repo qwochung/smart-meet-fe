@@ -610,6 +610,7 @@ export default function MeetingRoomPage() {
       if (!open) {
         setParticipantsOpen(false);
         setSummaryOpen(false);
+        setTranscriptOpen(false);
       }
       return !open;
     });
@@ -619,6 +620,7 @@ export default function MeetingRoomPage() {
       if (!open) {
         setChatOpen(false);
         setSummaryOpen(false);
+        setTranscriptOpen(false);
       }
       return !open;
     });
@@ -628,6 +630,17 @@ export default function MeetingRoomPage() {
       if (!open) {
         setChatOpen(false);
         setParticipantsOpen(false);
+        setTranscriptOpen(false);
+      }
+      return !open;
+    });
+  };
+  const toggleTranscriptPanel = () => {
+    setTranscriptOpen((open) => {
+      if (!open) {
+        setChatOpen(false);
+        setParticipantsOpen(false);
+        setSummaryOpen(false);
       }
       return !open;
     });
@@ -812,6 +825,9 @@ export default function MeetingRoomPage() {
           onToggleChat={toggleChatPanel}
           onToggleParticipants={toggleParticipantsPanel}
           onToggleSummary={toggleSummaryPanel}
+          transcriptAvailable={effectiveAsrEnabled}
+          transcriptOpen={transcriptOpen}
+          onToggleTranscript={toggleTranscriptPanel}
         />
 
         <main
